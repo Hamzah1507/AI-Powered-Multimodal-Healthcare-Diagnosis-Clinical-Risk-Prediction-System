@@ -5,7 +5,7 @@ import transformers
 warnings.filterwarnings('ignore')
 transformers.logging.set_verbosity_error()
 
-from predict import predict_xray, predict_vitals
+from predict import predict_xray, predict_vitals, predict_brain
 
 app = FastAPI(title="AI Healthcare Diagnosis API")
 
@@ -26,6 +26,14 @@ async def predict_xray_endpoint(
 ):
     image_bytes = await image.read()
     result = predict_xray(image_bytes)
+    return {"status": "success", **result}
+
+@app.post("/predict-brain")
+async def predict_brain_endpoint(
+    image: UploadFile = File(...)
+):
+    image_bytes = await image.read()
+    result = predict_brain(image_bytes)
     return {"status": "success", **result}
 
 @app.post("/predict-vitals")
