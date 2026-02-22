@@ -5,11 +5,10 @@ import transformers
 warnings.filterwarnings('ignore')
 transformers.logging.set_verbosity_error()
 
-from predict import predict
+from predict import predict_xray, predict_vitals
 
 app = FastAPI(title="AI Healthcare Diagnosis API")
 
-# Allow React frontend to connect
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,9 +20,16 @@ app.add_middleware(
 def home():
     return {"message": "AI Healthcare Diagnosis API is running! ✅"}
 
-@app.post("/predict")
-async def predict_endpoint(
-    image: UploadFile = File(...),
+@app.post("/predict-xray")
+async def predict_xray_endpoint(
+    image: UploadFile = File(...)
+):
+    image_bytes = await image.read()
+    result = predict_xray(image_bytes)
+    return {"status": "success", **result}
+
+@app.post("/predict-vitals")
+async def predict_vitals_endpoint(
     pregnancies: float = Form(...),
     glucose: float = Form(...),
     blood_pressure: float = Form(...),
@@ -31,25 +37,10 @@ async def predict_endpoint(
     insulin: float = Form(...),
     bmi: float = Form(...),
     diabetes_pedigree: float = Form(...),
-    age: float = Form(...),
-    symptoms: str = Form(...)
+    age: float = Form(...)
 ):
-    # Read image
-    image_bytes = await image.read()
-
-    # Vitals list
-    vitals = [
-        pregnancies, glucose, blood_pressure,
-        skin_thickness, insulin, bmi,
-        diabetes_pedigree, age
-    ]
-
-    # Get prediction
-    result = predict(image_bytes, vitals, symptoms)
-
-    return {
-        "status": "success",
-        "diagnosis": result["diagnosis"],
-        "risk_score": result["risk_score"],
-        "probabilities": result["probabilities"]
-    }
+    vitals = [pregnancies, glucose, blood_pressure,
+              skin_thickness, insulin, bmi,
+              diabetes_pedigree, age]
+    result = predict_vitals(vitals)
+    return {"status": "success", **result}
