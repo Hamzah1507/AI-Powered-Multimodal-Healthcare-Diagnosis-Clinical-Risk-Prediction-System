@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
@@ -55,6 +54,15 @@ with open('../models/vitals_scaler.pkl', 'rb') as f:
     scaler = pickle.load(f)
 print("Scaler ready! ✅")
 
+# ── Load Brain Tumor Model ────────────────────────────
+print("Loading Brain Tumor model...")
+brain_model = models.efficientnet_b3(weights=None)
+brain_model.classifier[1] = nn.Linear(brain_model.classifier[1].in_features, 4)
+brain_model.load_state_dict(torch.load('../models/brain_tumor_model.pth', map_location=device))
+brain_model = brain_model.to(device)
+brain_model.eval()
+print("Brain Tumor model ready! ✅")
+
 # ── Predict X-Ray ─────────────────────────────────────
 def predict_xray(image_bytes: bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
@@ -75,7 +83,6 @@ def predict_xray(image_bytes: bytes):
 
 # ── Predict Vitals ────────────────────────────────────
 def predict_vitals(vitals: list):
-    # Scale input before prediction
     vitals_scaled = scaler.transform([vitals])
     tensor = torch.FloatTensor(vitals_scaled).to(device)
     with torch.no_grad():
@@ -89,5 +96,26 @@ def predict_vitals(vitals: list):
         "probabilities": {
             "No Diabetes": round(probs[0].item() * 100, 2),
             "Diabetes":    round(probs[1].item() * 100, 2)
+        }
+    }
+
+# ── Predict Brain Tumor ───────────────────────────────
+def predict_brain(image_bytes: bytes):
+    img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+    tensor = transform(img).unsqueeze(0).to(device)
+    with torch.no_grad():
+        output = brain_model(tensor)
+        probs = torch.softmax(output, dim=1)[0]
+    classes = ['Glioma', 'Meningioma', 'No Tumor', 'Pituitary']
+    pred = torch.argmax(probs).item()
+    risk_score = int((1 - probs[2].item()) * 100)
+    return {
+        "diagnosis": classes[pred],
+        "risk_score": risk_score,
+        "probabilities": {
+            "Glioma":     round(probs[0].item() * 100, 2),
+            "Meningioma": round(probs[1].item() * 100, 2),
+            "No Tumor":   round(probs[2].item() * 100, 2),
+            "Pituitary":  round(probs[3].item() * 100, 2)
         }
     }
