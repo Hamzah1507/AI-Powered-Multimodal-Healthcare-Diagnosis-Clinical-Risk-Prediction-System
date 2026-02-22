@@ -34,6 +34,8 @@ async def predict_brain_endpoint(
 ):
     image_bytes = await image.read()
     result = predict_brain(image_bytes)
+    if result.get("error"):
+        return {"status": "error", "message": result["message"]}
     return {"status": "success", **result}
 
 @app.post("/predict-vitals")

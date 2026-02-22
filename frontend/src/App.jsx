@@ -61,7 +61,11 @@ function App() {
         setVitalsResult(vitalsRes.data)
       } else {
         const brainRes = await axios.post('http://127.0.0.1:8000/predict-brain', imageForm)
-        setBrainResult(brainRes.data)
+        if (brainRes.data.status === 'error') {
+          setError(brainRes.data.message)
+        } else {
+          setBrainResult(brainRes.data)
+        }
       }
     } catch (err) {
       setError('Error connecting to backend!')
@@ -138,7 +142,7 @@ function App() {
       {error && (
         <div style={{ background: '#fee2e2', border: '1px solid #ef4444',
           padding: '12px', borderRadius: '8px', marginBottom: '20px', color: '#dc2626' }}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
@@ -152,7 +156,7 @@ function App() {
         )}
       </div>
 
-      {/* Vitals — only for X-Ray module */}
+      {/* Vitals */}
       {activeModule === 'xray' && (
         <div style={{ background: '#f1f5f9', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
           <h2>💉 Patient Vitals</h2>
@@ -180,15 +184,15 @@ function App() {
         </div>
       )}
 
-      {/* Brain MRI info box */}
+      {/* Brain MRI info */}
       {activeModule === 'brain' && (
         <div style={{ background: '#f5f3ff', padding: '15px', borderRadius: '10px',
           marginBottom: '20px', border: '1px solid #7c3aed' }}>
           <p style={{ color: '#7c3aed', fontWeight: 'bold', margin: 0 }}>
-            🧠 This module detects: Glioma, Meningioma, Pituitary Tumor, or No Tumor
+            🧠 Detects: Glioma, Meningioma, Pituitary Tumor, or No Tumor
           </p>
           <p style={{ color: '#64748b', fontSize: '13px', margin: '5px 0 0' }}>
-            Upload a brain MRI scan image for tumor detection
+            ⚠️ Only brain MRI scans are accepted. Random or colorful images will be rejected.
           </p>
         </div>
       )}

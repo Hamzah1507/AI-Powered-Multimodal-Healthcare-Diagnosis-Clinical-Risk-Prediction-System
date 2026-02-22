@@ -12,7 +12,6 @@ transformers.logging.set_verbosity_error()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# ── Image Transform ───────────────────────────────────
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -20,7 +19,6 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# ── Load X-Ray Model ──────────────────────────────────
 print("Loading X-Ray model...")
 xray_model = models.resnet50(weights=None)
 xray_model.fc = nn.Linear(xray_model.fc.in_features, 2)
@@ -29,7 +27,6 @@ xray_model = xray_model.to(device)
 xray_model.eval()
 print("X-Ray model ready! ✅")
 
-# ── Load Vitals Model ─────────────────────────────────
 class VitalsModel(nn.Module):
     def __init__(self):
         super(VitalsModel, self).__init__()
@@ -48,13 +45,11 @@ vitals_model.load_state_dict(torch.load('../models/vitals_model.pth', map_locati
 vitals_model.eval()
 print("Vitals model ready! ✅")
 
-# ── Load Scaler ───────────────────────────────────────
 print("Loading scaler...")
 with open('../models/vitals_scaler.pkl', 'rb') as f:
     scaler = pickle.load(f)
 print("Scaler ready! ✅")
 
-# ── Load Brain Tumor Model ────────────────────────────
 print("Loading Brain Tumor model...")
 brain_model = models.efficientnet_b3(weights=None)
 brain_model.classifier[1] = nn.Linear(brain_model.classifier[1].in_features, 4)
@@ -63,7 +58,6 @@ brain_model = brain_model.to(device)
 brain_model.eval()
 print("Brain Tumor model ready! ✅")
 
-# ── Predict X-Ray ─────────────────────────────────────
 def predict_xray(image_bytes: bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     tensor = transform(img).unsqueeze(0).to(device)
@@ -81,7 +75,6 @@ def predict_xray(image_bytes: bytes):
         }
     }
 
-# ── Predict Vitals ────────────────────────────────────
 def predict_vitals(vitals: list):
     vitals_scaled = scaler.transform([vitals])
     tensor = torch.FloatTensor(vitals_scaled).to(device)
@@ -99,17 +92,40 @@ def predict_vitals(vitals: list):
         }
     }
 
-# ── Predict Brain Tumor ───────────────────────────────
 def predict_brain(image_bytes: bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+
+    # Validate if image looks like MRI (grayscale-like)
+    img_array = np.array(img)
+    r, g, b = img_array[:,:,0], img_array[:,:,1], img_array[:,:,2]
+    rg_diff = np.mean(np.abs(r.astype(int) - g.astype(int)))
+    rb_diff = np.mean(np.abs(r.astype(int) - b.astype(int)))
+    gb_diff = np.mean(np.abs(g.astype(int) - b.astype(int)))
+    avg_color_diff = (rg_diff + rb_diff + gb_diff) / 3
+
+    if avg_color_diff > 20:
+        return {
+            "error": True,
+            "message": "⚠️ Invalid image! Please upload a Brain MRI scan. Colorful or non-medical images are not accepted."
+        }
+
     tensor = transform(img).unsqueeze(0).to(device)
     with torch.no_grad():
         output = brain_model(tensor)
         probs = torch.softmax(output, dim=1)[0]
+
+    max_prob = probs.max().item()
+    if max_prob < 0.5:
+        return {
+            "error": True,
+            "message": "⚠️ Image doesn't look like a Brain MRI scan. Please upload a proper MRI image."
+        }
+
     classes = ['Glioma', 'Meningioma', 'No Tumor', 'Pituitary']
     pred = torch.argmax(probs).item()
     risk_score = int((1 - probs[2].item()) * 100)
     return {
+        "error": False,
         "diagnosis": classes[pred],
         "risk_score": risk_score,
         "probabilities": {
