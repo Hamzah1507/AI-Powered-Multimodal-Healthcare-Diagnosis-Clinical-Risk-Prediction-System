@@ -5,12 +5,13 @@
 }
 
 body {
-  background: #e8f0fe;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
   min-height: 100vh;
+  font-family: 'Segoe UI', Arial, sans-serif;
   padding: 20px;
 }
 
 #root {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 }

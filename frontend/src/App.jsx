@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import axios from 'axios'
-import './App.css'
 
 function App() {
   const [activeModule, setActiveModule] = useState('xray')
   const [image, setImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
+  const [patientName, setPatientName] = useState('')
+  const [patientAge, setPatientAge] = useState('')
+  const [patientGender, setPatientGender] = useState('Male')
   const [vitals, setVitals] = useState({
     pregnancies: '', glucose: '', blood_pressure: '',
     skin_thickness: '', insulin: '', bmi: '',
@@ -25,14 +27,11 @@ function App() {
     setError(null)
   }
 
-  const handleVitals = (e) => {
-    setVitals({ ...vitals, [e.target.name]: e.target.value })
-  }
-
   const handleReset = () => {
     setImage(null); setImagePreview(null)
     setXrayResult(null); setBrainResult(null)
     setVitalsResult(null); setError(null)
+    setPatientName(''); setPatientAge(''); setPatientGender('Male')
     setVitals({ pregnancies: '', glucose: '', blood_pressure: '',
       skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: '' })
   }
@@ -45,11 +44,9 @@ function App() {
     }
     setLoading(true)
     setXrayResult(null); setBrainResult(null); setVitalsResult(null)
-
     try {
       const imageForm = new FormData()
       imageForm.append('image', image)
-
       if (activeModule === 'xray') {
         const vitalsForm = new FormData()
         Object.keys(vitals).forEach(key => vitalsForm.append(key, vitals[key] || 0))
@@ -85,27 +82,63 @@ function App() {
     return '🟢 Low Risk'
   }
 
-  const ResultCard = ({ title, result }) => (
-    <div style={{ background: '#f0fdf4', padding: '20px', borderRadius: '10px',
-      border: '2px solid #22c55e', flex: 1 }}>
-      <h3 style={{ color: '#1e40af', marginBottom: '10px' }}>{title}</h3>
-      <h4 style={{ fontSize: '20px', marginBottom: '10px' }}>
-        Diagnosis: {result.diagnosis}
-      </h4>
-      <p style={{ fontWeight: 'bold' }}>
-        Risk Score: {result.risk_score}/100 — {getRiskLabel(result.risk_score)}
-      </p>
-      <div style={{ background: '#e2e8f0', borderRadius: '10px',
-        height: '20px', margin: '8px 0 16px' }}>
+  const card = {
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '16px',
+    padding: '24px',
+    marginBottom: '20px',
+    backdropFilter: 'blur(10px)'
+  }
+
+  const input = {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: '8px',
+    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'rgba(255,255,255,0.07)',
+    color: 'white',
+    fontSize: '14px',
+    marginTop: '6px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  }
+
+  const label = {
+    color: '#94a3b8',
+    fontSize: '13px',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  }
+
+  const ResultCard = ({ title, result, color }) => (
+    <div style={{ ...card, border: `1px solid ${color}40`, flex: 1 }}>
+      <h3 style={{ color, marginBottom: '16px', fontSize: '16px' }}>{title}</h3>
+      <div style={{ background: `${color}15`, borderRadius: '10px',
+        padding: '12px', marginBottom: '16px' }}>
+        <p style={{ color: 'white', fontSize: '22px', fontWeight: 'bold', margin: 0 }}>
+          {result.diagnosis}
+        </p>
+        <p style={{ color: getRiskColor(result.risk_score), margin: '4px 0 0', fontWeight: '600' }}>
+          {getRiskLabel(result.risk_score)} — {result.risk_score}/100
+        </p>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px',
+        height: '8px', marginBottom: '20px' }}>
         <div style={{ width: `${result.risk_score}%`, height: '100%',
-          background: getRiskColor(result.risk_score), borderRadius: '10px' }} />
+          background: getRiskColor(result.risk_score), borderRadius: '8px',
+          transition: 'width 1s ease' }} />
       </div>
       {Object.entries(result.probabilities).map(([disease, prob]) => (
-        <div key={disease} style={{ marginBottom: '10px' }}>
-          <p style={{ margin: '0 0 4px', fontWeight: 'bold' }}>{disease}: {prob}%</p>
-          <div style={{ background: '#e2e8f0', borderRadius: '10px', height: '14px' }}>
+        <div key={disease} style={{ marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span style={{ color: '#cbd5e1', fontSize: '13px' }}>{disease}</span>
+            <span style={{ color: 'white', fontWeight: 'bold', fontSize: '13px' }}>{prob}%</span>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '6px' }}>
             <div style={{ width: `${prob}%`, height: '100%',
-              background: '#1e40af', borderRadius: '10px' }} />
+              background: color, borderRadius: '4px', transition: 'width 1s ease' }} />
           </div>
         </div>
       ))}
@@ -113,54 +146,119 @@ function App() {
   )
 
   return (
-    <div style={{ maxWidth: '950px', margin: '0 auto', padding: '20px', fontFamily: 'Arial' }}>
-      <h1 style={{ textAlign: 'center', color: '#1e40af' }}>
-        🏥 AI Healthcare Diagnosis System
-      </h1>
-      <p style={{ textAlign: 'center', color: '#64748b' }}>
-        Multimodal AI-powered medical diagnosis
-      </p>
+    <div style={{ color: 'white', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
 
-      {/* Module Selector */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: '32px', paddingTop: '20px' }}>
+        <div style={{ fontSize: '48px', marginBottom: '8px' }}>🏥</div>
+        <h1 style={{ fontSize: '32px', fontWeight: '800', background:
+          'linear-gradient(135deg, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent', margin: 0 }}>
+          AI Healthcare Diagnosis System
+        </h1>
+        <p style={{ color: '#64748b', marginTop: '8px', fontSize: '15px' }}>
+          Multimodal AI-powered clinical decision support
+        </p>
+      </div>
+
+      {/* Module Tabs */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
         <button onClick={() => { setActiveModule('xray'); handleReset() }}
-          style={{ flex: 1, padding: '15px', border: 'none', borderRadius: '10px',
-            fontSize: '16px', cursor: 'pointer', fontWeight: 'bold',
-            background: activeModule === 'xray' ? '#1e40af' : '#e2e8f0',
-            color: activeModule === 'xray' ? 'white' : '#1e40af' }}>
+          style={{ flex: 1, padding: '16px', border: 'none', borderRadius: '12px',
+            fontSize: '15px', cursor: 'pointer', fontWeight: '700', transition: 'all 0.3s',
+            background: activeModule === 'xray'
+              ? 'linear-gradient(135deg, #1d4ed8, #3b82f6)' : 'rgba(255,255,255,0.05)',
+            color: 'white', boxShadow: activeModule === 'xray'
+              ? '0 4px 20px rgba(59,130,246,0.4)' : 'none' }}>
           🫁 Chest X-Ray + Diabetes
         </button>
         <button onClick={() => { setActiveModule('brain'); handleReset() }}
-          style={{ flex: 1, padding: '15px', border: 'none', borderRadius: '10px',
-            fontSize: '16px', cursor: 'pointer', fontWeight: 'bold',
-            background: activeModule === 'brain' ? '#7c3aed' : '#e2e8f0',
-            color: activeModule === 'brain' ? 'white' : '#7c3aed' }}>
+          style={{ flex: 1, padding: '16px', border: 'none', borderRadius: '12px',
+            fontSize: '15px', cursor: 'pointer', fontWeight: '700', transition: 'all 0.3s',
+            background: activeModule === 'brain'
+              ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)' : 'rgba(255,255,255,0.05)',
+            color: 'white', boxShadow: activeModule === 'brain'
+              ? '0 4px 20px rgba(139,92,246,0.4)' : 'none' }}>
           🧠 Brain MRI Tumor Detection
         </button>
       </div>
 
+      {/* Error */}
       {error && (
-        <div style={{ background: '#fee2e2', border: '1px solid #ef4444',
-          padding: '12px', borderRadius: '8px', marginBottom: '20px', color: '#dc2626' }}>
+        <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444',
+          padding: '14px', borderRadius: '10px', marginBottom: '20px',
+          color: '#fca5a5', fontSize: '14px' }}>
           {error}
         </div>
       )}
 
+      {/* Patient Info */}
+      <div style={card}>
+        <h2 style={{ color: '#60a5fa', marginBottom: '16px', fontSize: '16px' }}>
+          👤 Patient Information
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          <div>
+            <label style={label}>Patient Name</label>
+            <input style={input} placeholder="Enter name"
+              value={patientName} onChange={e => setPatientName(e.target.value)} />
+          </div>
+          <div>
+            <label style={label}>Age</label>
+            <input style={input} type="number" placeholder="Enter age"
+              value={patientAge} onChange={e => setPatientAge(e.target.value)} />
+          </div>
+          <div>
+            <label style={label}>Gender</label>
+            <select style={input} value={patientGender}
+              onChange={e => setPatientGender(e.target.value)}>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Image Upload */}
-      <div style={{ background: '#f1f5f9', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
-        <h2>{activeModule === 'xray' ? '📷 Upload Chest X-Ray' : '🧠 Upload Brain MRI Scan'}</h2>
-        <input type="file" accept="image/*" onChange={handleImage} />
-        {imagePreview && (
-          <img src={imagePreview} alt="preview"
-            style={{ width: '200px', marginTop: '10px', borderRadius: '8px', display: 'block' }} />
+      <div style={card}>
+        <h2 style={{ color: activeModule === 'brain' ? '#a78bfa' : '#60a5fa',
+          marginBottom: '16px', fontSize: '16px' }}>
+          {activeModule === 'xray' ? '📷 Chest X-Ray Image' : '🧠 Brain MRI Scan'}
+        </h2>
+        <label style={{ display: 'block', border: '2px dashed rgba(255,255,255,0.2)',
+          borderRadius: '12px', padding: '30px', textAlign: 'center', cursor: 'pointer',
+          transition: 'all 0.3s' }}>
+          <input type="file" accept="image/*" onChange={handleImage}
+            style={{ display: 'none' }} />
+          {imagePreview ? (
+            <img src={imagePreview} alt="preview"
+              style={{ maxWidth: '250px', maxHeight: '250px',
+                borderRadius: '10px', objectFit: 'contain' }} />
+          ) : (
+            <div>
+              <div style={{ fontSize: '40px', marginBottom: '10px' }}>📁</div>
+              <p style={{ color: '#64748b' }}>Click to upload image</p>
+              <p style={{ color: '#475569', fontSize: '12px', marginTop: '4px' }}>
+                PNG, JPG, JPEG supported
+              </p>
+            </div>
+          )}
+        </label>
+        {activeModule === 'brain' && (
+          <p style={{ color: '#a78bfa', fontSize: '12px', marginTop: '10px' }}>
+            ⚠️ Only Brain MRI scans accepted. Chest X-rays and colorful images will be rejected.
+          </p>
         )}
       </div>
 
       {/* Vitals */}
       {activeModule === 'xray' && (
-        <div style={{ background: '#f1f5f9', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
-          <h2>💉 Patient Vitals</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div style={card}>
+          <h2 style={{ color: '#60a5fa', marginBottom: '16px', fontSize: '16px' }}>
+            💉 Patient Vitals
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {[
               ['pregnancies', 'Pregnancies'],
               ['glucose', 'Glucose *'],
@@ -170,45 +268,44 @@ function App() {
               ['bmi', 'BMI *'],
               ['diabetes_pedigree', 'Diabetes Pedigree'],
               ['age', 'Age *']
-            ].map(([key, label]) => (
+            ].map(([key, lbl]) => (
               <div key={key}>
-                <label style={{ fontWeight: 'bold' }}>{label}</label>
-                <input type="number" name={key} value={vitals[key]}
-                  onChange={handleVitals} placeholder={`Enter ${label}`}
-                  style={{ width: '100%', padding: '8px', marginTop: '4px',
-                    borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                <label style={label}>{lbl}</label>
+                <input type="number" style={input}
+                  placeholder={`Enter ${lbl.replace(' *','')}`}
+                  name={key} value={vitals[key]}
+                  onChange={e => setVitals({...vitals, [key]: e.target.value})} />
               </div>
             ))}
           </div>
-          <p style={{ color: '#94a3b8', fontSize: '12px', marginTop: '8px' }}>* Required fields</p>
-        </div>
-      )}
-
-      {/* Brain MRI info */}
-      {activeModule === 'brain' && (
-        <div style={{ background: '#f5f3ff', padding: '15px', borderRadius: '10px',
-          marginBottom: '20px', border: '1px solid #7c3aed' }}>
-          <p style={{ color: '#7c3aed', fontWeight: 'bold', margin: 0 }}>
-            🧠 Detects: Glioma, Meningioma, Pituitary Tumor, or No Tumor
-          </p>
-          <p style={{ color: '#64748b', fontSize: '13px', margin: '5px 0 0' }}>
-            ⚠️ Only brain MRI scans are accepted. Random or colorful images will be rejected.
+          <p style={{ color: '#475569', fontSize: '11px', marginTop: '12px' }}>
+            * Required fields
           </p>
         </div>
       )}
 
-      {/* Buttons */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <button onClick={handleSubmit} disabled={loading}
-          style={{ flex: 1, padding: '15px',
-            background: loading ? '#93c5fd' : activeModule === 'brain' ? '#7c3aed' : '#1e40af',
-            color: 'white', border: 'none', borderRadius: '10px',
-            fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer' }}>
-          {loading ? '🔄 Analyzing...' : '🔍 Analyze Patient'}
+      {/* Analyze Button */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+        <button onClick={handleSubmit} disabled={loading} style={{
+          flex: 1, padding: '16px', border: 'none', borderRadius: '12px',
+          fontSize: '17px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
+          background: loading ? 'rgba(255,255,255,0.1)' :
+            activeModule === 'brain'
+              ? 'linear-gradient(135deg, #6d28d9, #8b5cf6)'
+              : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+          color: 'white',
+          boxShadow: loading ? 'none' :
+            activeModule === 'brain'
+              ? '0 4px 20px rgba(139,92,246,0.4)'
+              : '0 4px 20px rgba(59,130,246,0.4)'
+        }}>
+          {loading ? '🔄 Analyzing Patient Data...' : '🔍 Analyze Patient'}
         </button>
-        <button onClick={handleReset}
-          style={{ padding: '15px 25px', background: '#64748b', color: 'white',
-            border: 'none', borderRadius: '10px', fontSize: '16px', cursor: 'pointer' }}>
+        <button onClick={handleReset} style={{
+          padding: '16px 24px', border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: '12px', fontSize: '15px', cursor: 'pointer',
+          background: 'rgba(255,255,255,0.05)', color: '#94a3b8', fontWeight: '600'
+        }}>
           🔁 Reset
         </button>
       </div>
@@ -216,12 +313,24 @@ function App() {
       {/* X-Ray Results */}
       {xrayResult && vitalsResult && (
         <div>
-          <h2 style={{ textAlign: 'center' }}>📊 Diagnosis Results</h2>
-          <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-            <ResultCard title="🫁 Chest X-Ray Analysis" result={xrayResult} />
-            <ResultCard title="🩸 Diabetes Risk Analysis" result={vitalsResult} />
+          {patientName && (
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <p style={{ color: '#64748b', fontSize: '14px' }}>
+                Patient: <span style={{ color: 'white', fontWeight: '700' }}>
+                  {patientName}</span> | Age: {patientAge} | Gender: {patientGender}
+              </p>
+            </div>
+          )}
+          <h2 style={{ textAlign: 'center', marginBottom: '16px', color: '#60a5fa' }}>
+            📊 Diagnosis Results
+          </h2>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <ResultCard title="🫁 Chest X-Ray Analysis"
+              result={xrayResult} color="#3b82f6" />
+            <ResultCard title="🩸 Diabetes Risk Analysis"
+              result={vitalsResult} color="#10b981" />
           </div>
-          <p style={{ color: '#64748b', fontSize: '12px', marginTop: '15px', textAlign: 'center' }}>
+          <p style={{ color: '#475569', fontSize: '12px', textAlign: 'center', marginTop: '16px' }}>
             ⚠️ AI-assisted diagnosis only. Always consult a qualified medical professional.
           </p>
         </div>
@@ -230,15 +339,32 @@ function App() {
       {/* Brain Results */}
       {brainResult && (
         <div>
-          <h2 style={{ textAlign: 'center' }}>📊 Brain MRI Results</h2>
-          <div style={{ marginTop: '10px' }}>
-            <ResultCard title="🧠 Brain Tumor Analysis" result={brainResult} />
-          </div>
-          <p style={{ color: '#64748b', fontSize: '12px', marginTop: '15px', textAlign: 'center' }}>
+          {patientName && (
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <p style={{ color: '#64748b', fontSize: '14px' }}>
+                Patient: <span style={{ color: 'white', fontWeight: '700' }}>
+                  {patientName}</span> | Age: {patientAge} | Gender: {patientGender}
+              </p>
+            </div>
+          )}
+          <h2 style={{ textAlign: 'center', marginBottom: '16px', color: '#a78bfa' }}>
+            📊 Brain MRI Results
+          </h2>
+          <ResultCard title="🧠 Brain Tumor Analysis"
+            result={brainResult} color="#8b5cf6" />
+          <p style={{ color: '#475569', fontSize: '12px', textAlign: 'center', marginTop: '16px' }}>
             ⚠️ AI-assisted diagnosis only. Always consult a qualified medical professional.
           </p>
         </div>
       )}
+
+      {/* Footer */}
+      <div style={{ textAlign: 'center', marginTop: '40px', paddingBottom: '20px',
+        borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+        <p style={{ color: '#334155', fontSize: '12px' }}>
+          AI Healthcare Diagnosis System — Capstone Project 2026
+        </p>
+      </div>
     </div>
   )
 }
