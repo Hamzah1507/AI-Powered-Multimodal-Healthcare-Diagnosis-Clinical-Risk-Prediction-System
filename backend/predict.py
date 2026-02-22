@@ -18,18 +18,12 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# ── Load Image Model (ResNet50) ───────────────────────
-class XRayModel(nn.Module):
-    def __init__(self, num_classes):
-        super(XRayModel, self).__init__()
-        self.model = models.resnet50(weights=None)
-        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
-    def forward(self, x):
-        return self.model(x)
-
+# ── Load X-Ray Model ──────────────────────────────────
 print("Loading X-Ray model...")
-xray_model = XRayModel(num_classes=2).to(device)
+xray_model = models.resnet50(weights=None)
+xray_model.fc = nn.Linear(xray_model.fc.in_features, 2)
 xray_model.load_state_dict(torch.load('../models/image_model.pth', map_location=device))
+xray_model = xray_model.to(device)
 xray_model.eval()
 print("X-Ray model ready! ✅")
 
