@@ -33,10 +33,8 @@ function App() {
     setImage(null); setImagePreview(null)
     setXrayResult(null); setBrainResult(null)
     setVitalsResult(null); setError(null)
-    setVitals({
-      pregnancies: '', glucose: '', blood_pressure: '',
-      skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: ''
-    })
+    setVitals({ pregnancies: '', glucose: '', blood_pressure: '',
+      skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: '' })
   }
 
   const handleSubmit = async () => {
@@ -84,10 +82,8 @@ function App() {
   }
 
   const ResultCard = ({ title, result }) => (
-    <div style={{
-      background: '#f0fdf4', padding: '20px', borderRadius: '10px',
-      border: '2px solid #22c55e', flex: 1
-    }}>
+    <div style={{ background: '#f0fdf4', padding: '20px', borderRadius: '10px',
+      border: '2px solid #22c55e', flex: 1 }}>
       <h3 style={{ color: '#1e40af', marginBottom: '10px' }}>{title}</h3>
       <h4 style={{ fontSize: '20px', marginBottom: '10px' }}>
         Diagnosis: {result.diagnosis}
@@ -95,23 +91,17 @@ function App() {
       <p style={{ fontWeight: 'bold' }}>
         Risk Score: {result.risk_score}/100 — {getRiskLabel(result.risk_score)}
       </p>
-      <div style={{
-        background: '#e2e8f0', borderRadius: '10px',
-        height: '20px', margin: '8px 0 16px'
-      }}>
-        <div style={{
-          width: `${result.risk_score}%`, height: '100%',
-          background: getRiskColor(result.risk_score), borderRadius: '10px'
-        }} />
+      <div style={{ background: '#e2e8f0', borderRadius: '10px',
+        height: '20px', margin: '8px 0 16px' }}>
+        <div style={{ width: `${result.risk_score}%`, height: '100%',
+          background: getRiskColor(result.risk_score), borderRadius: '10px' }} />
       </div>
       {Object.entries(result.probabilities).map(([disease, prob]) => (
         <div key={disease} style={{ marginBottom: '10px' }}>
           <p style={{ margin: '0 0 4px', fontWeight: 'bold' }}>{disease}: {prob}%</p>
           <div style={{ background: '#e2e8f0', borderRadius: '10px', height: '14px' }}>
-            <div style={{
-              width: `${prob}%`, height: '100%',
-              background: '#1e40af', borderRadius: '10px'
-            }} />
+            <div style={{ width: `${prob}%`, height: '100%',
+              background: '#1e40af', borderRadius: '10px' }} />
           </div>
         </div>
       ))}
@@ -130,30 +120,24 @@ function App() {
       {/* Module Selector */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <button onClick={() => { setActiveModule('xray'); handleReset() }}
-          style={{
-            flex: 1, padding: '15px', border: 'none', borderRadius: '10px',
+          style={{ flex: 1, padding: '15px', border: 'none', borderRadius: '10px',
             fontSize: '16px', cursor: 'pointer', fontWeight: 'bold',
             background: activeModule === 'xray' ? '#1e40af' : '#e2e8f0',
-            color: activeModule === 'xray' ? 'white' : '#1e40af'
-          }}>
+            color: activeModule === 'xray' ? 'white' : '#1e40af' }}>
           🫁 Chest X-Ray + Diabetes
         </button>
         <button onClick={() => { setActiveModule('brain'); handleReset() }}
-          style={{
-            flex: 1, padding: '15px', border: 'none', borderRadius: '10px',
+          style={{ flex: 1, padding: '15px', border: 'none', borderRadius: '10px',
             fontSize: '16px', cursor: 'pointer', fontWeight: 'bold',
             background: activeModule === 'brain' ? '#7c3aed' : '#e2e8f0',
-            color: activeModule === 'brain' ? 'white' : '#7c3aed'
-          }}>
+            color: activeModule === 'brain' ? 'white' : '#7c3aed' }}>
           🧠 Brain MRI Tumor Detection
         </button>
       </div>
 
       {error && (
-        <div style={{
-          background: '#fee2e2', border: '1px solid #ef4444',
-          padding: '12px', borderRadius: '8px', marginBottom: '20px', color: '#dc2626'
-        }}>
+        <div style={{ background: '#fee2e2', border: '1px solid #ef4444',
+          padding: '12px', borderRadius: '8px', marginBottom: '20px', color: '#dc2626' }}>
           ⚠️ {error}
         </div>
       )}
@@ -187,10 +171,8 @@ function App() {
                 <label style={{ fontWeight: 'bold' }}>{label}</label>
                 <input type="number" name={key} value={vitals[key]}
                   onChange={handleVitals} placeholder={`Enter ${label}`}
-                  style={{
-                    width: '100%', padding: '8px', marginTop: '4px',
-                    borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box'
-                  }} />
+                  style={{ width: '100%', padding: '8px', marginTop: '4px',
+                    borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
               </div>
             ))}
           </div>
@@ -200,10 +182,8 @@ function App() {
 
       {/* Brain MRI info box */}
       {activeModule === 'brain' && (
-        <div style={{
-          background: '#f5f3ff', padding: '15px', borderRadius: '10px',
-          marginBottom: '20px', border: '1px solid #7c3aed'
-        }}>
+        <div style={{ background: '#f5f3ff', padding: '15px', borderRadius: '10px',
+          marginBottom: '20px', border: '1px solid #7c3aed' }}>
           <p style={{ color: '#7c3aed', fontWeight: 'bold', margin: 0 }}>
             🧠 This module detects: Glioma, Meningioma, Pituitary Tumor, or No Tumor
           </p>
@@ -216,19 +196,15 @@ function App() {
       {/* Buttons */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <button onClick={handleSubmit} disabled={loading}
-          style={{
-            flex: 1, padding: '15px',
+          style={{ flex: 1, padding: '15px',
             background: loading ? '#93c5fd' : activeModule === 'brain' ? '#7c3aed' : '#1e40af',
             color: 'white', border: 'none', borderRadius: '10px',
-            fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer'
-          }}>
+            fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer' }}>
           {loading ? '🔄 Analyzing...' : '🔍 Analyze Patient'}
         </button>
         <button onClick={handleReset}
-          style={{
-            padding: '15px 25px', background: '#64748b', color: 'white',
-            border: 'none', borderRadius: '10px', fontSize: '16px', cursor: 'pointer'
-          }}>
+          style={{ padding: '15px 25px', background: '#64748b', color: 'white',
+            border: 'none', borderRadius: '10px', fontSize: '16px', cursor: 'pointer' }}>
           🔁 Reset
         </button>
       </div>
