@@ -94,9 +94,10 @@ def predict_vitals(vitals: list):
 
 def predict_brain(image_bytes: bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-
-    # Validate if image looks like MRI (grayscale-like)
     img_array = np.array(img)
+    h, w = img_array.shape[:2]
+
+    # Check 1 — reject colorful images
     r, g, b = img_array[:,:,0], img_array[:,:,1], img_array[:,:,2]
     rg_diff = np.mean(np.abs(r.astype(int) - g.astype(int)))
     rb_diff = np.mean(np.abs(r.astype(int) - b.astype(int)))
@@ -106,9 +107,26 @@ def predict_brain(image_bytes: bytes):
     if avg_color_diff > 20:
         return {
             "error": True,
-            "message": "⚠️ Invalid image! Please upload a Brain MRI scan. Colorful or non-medical images are not accepted."
+            "message": "⚠️ Invalid image! Please upload a Brain MRI scan only."
         }
 
+    # Check 2 — Brain MRI aspect ratio is usually close to square
+    aspect_ratio = w / h
+    if aspect_ratio < 0.7 or aspect_ratio > 1.5:
+        return {
+            "error": True,
+            "message": "⚠️ Image format doesn't match a Brain MRI scan. Please upload a proper MRI image."
+        }
+
+    # Check 3 — Chest X-rays are brighter overall than brain MRIs
+    overall_brightness = np.mean(img_array)
+    if overall_brightness > 160:
+        return {
+            "error": True,
+            "message": "⚠️ This looks like a Chest X-Ray, not a Brain MRI. Please upload a Brain MRI scan."
+        }
+
+    # Check 4 — Run model and check confidence
     tensor = transform(img).unsqueeze(0).to(device)
     with torch.no_grad():
         output = brain_model(tensor)
