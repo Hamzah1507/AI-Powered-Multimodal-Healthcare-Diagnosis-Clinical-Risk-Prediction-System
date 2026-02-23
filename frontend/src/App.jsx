@@ -2,7 +2,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import './App.css'
 import Welcome from './welcome'
-import Auth from './Auth'
+import Auth from './auth'
 
 const API = 'http://127.0.0.1:8000'
 
