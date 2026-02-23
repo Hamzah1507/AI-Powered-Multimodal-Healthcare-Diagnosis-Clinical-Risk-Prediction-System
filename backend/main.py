@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-
+from auth import router as auth_router
 from fastapi.responses import Response
 import warnings
 import transformers
@@ -14,6 +14,7 @@ from database import predictions_collection
 from crud import save_prediction, get_all_predictions, get_patient_history
 
 app = FastAPI(title="AI Healthcare Diagnosis API")
+app
 
 app.add_middleware(
     CORSMiddleware,
