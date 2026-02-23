@@ -20,6 +20,7 @@ export default function App() {
   const [brainHeatmap, setBrainHeatmap] = useState(null)
   const [loading, setLoading] = useState(false)
   const [gradcamLoading, setGradcamLoading] = useState(false)
+  const [reportLoading, setReportLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const reset = () => {
@@ -86,53 +87,52 @@ export default function App() {
   }
 
   const downloadReport = async () => {
-  if (!image) return
-  try {
-    const form = new FormData()
-    form.append('image', image)
-    form.append('module', module)
-    form.append('patient_name', patient.name || '')
-    form.append('patient_id', patient.id || '')
-    form.append('patient_age', patient.age || '')
-    form.append('patient_gender', patient.gender || 'Male')
+    if (!image) return
+    setReportLoading(true)
+    try {
+      const form = new FormData()
+      form.append('image', image)
+      form.append('module', module)
+      form.append('patient_name', patient.name || '')
+      form.append('patient_id', patient.id || '')
+      form.append('patient_age', patient.age || '')
+      form.append('patient_gender', patient.gender || 'Male')
 
-    if (module === 'xray' && xrayResult && vitalsResult) {
-      form.append('xray_diagnosis', xrayResult.diagnosis)
-      form.append('xray_risk_score', xrayResult.risk_score)
-      form.append('xray_prob_normal', xrayResult.probabilities['Normal'])
-      form.append('xray_prob_pneumonia', xrayResult.probabilities['Pneumonia'])
-      form.append('vitals_diagnosis', vitalsResult.diagnosis)
-      form.append('vitals_risk_score', vitalsResult.risk_score)
-      form.append('vitals_prob_no_diabetes', vitalsResult.probabilities['No Diabetes'])
-      form.append('vitals_prob_diabetes', vitalsResult.probabilities['Diabetes'])
-      form.append('heatmap', xrayHeatmap || '')
-    }
+      if (module === 'xray' && xrayResult && vitalsResult) {
+        form.append('xray_diagnosis', xrayResult.diagnosis)
+        form.append('xray_risk_score', xrayResult.risk_score)
+        form.append('xray_prob_normal', xrayResult.probabilities['Normal'])
+        form.append('xray_prob_pneumonia', xrayResult.probabilities['Pneumonia'])
+        form.append('vitals_diagnosis', vitalsResult.diagnosis)
+        form.append('vitals_risk_score', vitalsResult.risk_score)
+        form.append('vitals_prob_no_diabetes', vitalsResult.probabilities['No Diabetes'])
+        form.append('vitals_prob_diabetes', vitalsResult.probabilities['Diabetes'])
+        form.append('heatmap', xrayHeatmap || '')
+      }
 
-    if (module === 'brain' && brainResult) {
-      form.append('brain_diagnosis', brainResult.diagnosis)
-      form.append('brain_risk_score', brainResult.risk_score)
-      form.append('brain_prob_glioma', brainResult.probabilities['Glioma'])
-      form.append('brain_prob_meningioma', brainResult.probabilities['Meningioma'])
-      form.append('brain_prob_no_tumor', brainResult.probabilities['No Tumor'])
-      form.append('brain_prob_pituitary', brainResult.probabilities['Pituitary'])
-      form.append('heatmap', brainHeatmap || '')
-    }
+      if (module === 'brain' && brainResult) {
+        form.append('brain_diagnosis', brainResult.diagnosis)
+        form.append('brain_risk_score', brainResult.risk_score)
+        form.append('brain_prob_glioma', brainResult.probabilities['Glioma'])
+        form.append('brain_prob_meningioma', brainResult.probabilities['Meningioma'])
+        form.append('brain_prob_no_tumor', brainResult.probabilities['No Tumor'])
+        form.append('brain_prob_pituitary', brainResult.probabilities['Pituitary'])
+        form.append('heatmap', brainHeatmap || '')
+      }
 
-    const res = await axios.post(`${API}/generate-report`, form,
-      { responseType: 'blob' })
+      const res = await axios.post(`${API}/generate-report`, form,
+        { responseType: 'blob' })
 
-    const url = window.URL.createObjectURL(new Blob([res.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download',
-      `MediAI_Report_${patient.name || 'Patient'}.pdf`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-  } catch {
-    setError('Failed to generate PDF report!')
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `MediAI_Report_${patient.name || 'Patient'}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch { setError('Failed to generate PDF report!') }
+    setReportLoading(false)
   }
-}
 
   const riskColor = (s) => s >= 70 ? '#dc2626' : s >= 40 ? '#d97706' : '#16a34a'
   const riskBg = (s) => s >= 70 ? '#fef2f2' : s >= 40 ? '#fffbeb' : '#f0fdf4'
@@ -198,6 +198,36 @@ export default function App() {
           </div>
         </div>
       ))}
+    </div>
+  )
+
+  const DownloadButton = ({ color }) => (
+    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+      <button onClick={downloadReport} disabled={reportLoading} style={{
+        padding: '12px 28px', border: 'none', borderRadius: '10px',
+        background: reportLoading ? '#e2e8f0' : `linear-gradient(135deg, ${color}, ${color}cc)`,
+        color: reportLoading ? '#94a3b8' : 'white',
+        fontWeight: '700', fontSize: '15px',
+        cursor: reportLoading ? 'not-allowed' : 'pointer',
+        boxShadow: reportLoading ? 'none' : `0 4px 14px ${color}40`,
+        display: 'flex', alignItems: 'center', gap: '8px',
+        transition: 'all 0.3s'
+      }}>
+        {reportLoading ? '⏳ Generating PDF...' : '📄 Download PDF Report'}
+      </button>
+    </div>
+  )
+
+  const Disclaimer = () => (
+    <div style={{ background: '#fffbeb', border: '1px solid #fde68a',
+      borderRadius: '10px', padding: '12px 18px', marginTop: '12px',
+      display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <span>⚠️</span>
+      <p style={{ color: '#92400e', fontSize: '13px' }}>
+        <strong>Medical Disclaimer:</strong> This AI-assisted diagnosis is for clinical
+        decision support only. Always consult a qualified medical professional before
+        making any clinical decisions.
+      </p>
     </div>
   )
 
@@ -272,10 +302,9 @@ export default function App() {
           <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px',
             border: '1px solid #e2e8f0' }}>
             <p style={{ color: '#475569', fontSize: '13px', lineHeight: 1.6 }}>
-              <strong>📖 How to read this heatmap:</strong> 🔴 <strong>Red/Yellow</strong> areas
-              show where the AI detected abnormality and focused most attention.
-              🔵 <strong>Blue</strong> areas are less relevant regions.
-              The brighter the color, the more the AI focused on that area for its diagnosis.
+              <strong>📖 How to read:</strong> 🔴 <strong>Red/Yellow</strong> areas show
+              where the AI detected abnormality. 🔵 <strong>Blue</strong> areas are less
+              relevant. The brighter the color, the more the AI focused on that region.
             </p>
           </div>
         </div>
@@ -300,7 +329,7 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: '#f0f4f8' }}>
 
-      {/* Top Navigation Bar */}
+      {/* Navbar */}
       <nav style={{ background: 'white', borderBottom: '1px solid #e2e8f0',
         padding: '0 32px', display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', height: '64px',
@@ -355,12 +384,14 @@ export default function App() {
               ['X-Ray Accuracy', '98%'],
               ['Diabetes Accuracy', '78%'],
               ['Model', 'ResNet-50'],
-              ['Explainability', 'Grad-CAM']
+              ['Explainability', 'Grad-CAM'],
+              ['Reports', 'PDF Export']
             ] : [
               ['MRI Accuracy', '94.75%'],
               ['Tumor Types', '4 Classes'],
               ['Model', 'EfficientNet-B3'],
-              ['Explainability', 'Grad-CAM']
+              ['Explainability', 'Grad-CAM'],
+              ['Reports', 'PDF Export']
             ]).map(([l, v]) => (
               <div key={l} style={{ background: 'rgba(255,255,255,0.15)',
                 borderRadius: '10px', padding: '10px 18px' }}>
@@ -388,7 +419,6 @@ export default function App() {
 
           {/* Left Column */}
           <div>
-            {/* Patient Info */}
             <div style={card}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px',
                 marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
@@ -432,7 +462,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Image Upload */}
             <div style={card}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px',
                 marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
@@ -554,7 +583,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Analyze Button */}
             <button onClick={analyze} disabled={loading} style={{
               width: '100%', padding: '16px', border: 'none', borderRadius: '12px',
               fontSize: '16px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
@@ -593,16 +621,8 @@ export default function App() {
               <ResultCard icon="🩸" title="Diabetes Risk Analysis"
                 result={vitalsResult} color="#059669" />
             </div>
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a',
-              borderRadius: '10px', padding: '12px 18px', marginTop: '16px',
-              display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span>⚠️</span>
-              <p style={{ color: '#92400e', fontSize: '13px' }}>
-                <strong>Medical Disclaimer:</strong> This AI-assisted diagnosis is for
-                clinical decision support only. Always consult a qualified medical
-                professional before making any clinical decisions.
-              </p>
-            </div>
+            <DownloadButton color="#059669" />
+            <Disclaimer />
             <HeatmapSection heatmap={xrayHeatmap} color="#2563eb" borderColor="#bfdbfe" />
           </div>
         )}
@@ -625,16 +645,8 @@ export default function App() {
             </div>
             <ResultCard icon="🧠" title="Brain Tumor Analysis"
               result={brainResult} color="#7c3aed" />
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a',
-              borderRadius: '10px', padding: '12px 18px', marginTop: '16px',
-              display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span>⚠️</span>
-              <p style={{ color: '#92400e', fontSize: '13px' }}>
-                <strong>Medical Disclaimer:</strong> This AI-assisted diagnosis is for
-                clinical decision support only. Always consult a qualified medical
-                professional before making any clinical decisions.
-              </p>
-            </div>
+            <DownloadButton color="#7c3aed" />
+            <Disclaimer />
             <HeatmapSection heatmap={brainHeatmap} color="#7c3aed" borderColor="#ddd6fe" />
           </div>
         )}
