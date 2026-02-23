@@ -14,7 +14,7 @@ from database import predictions_collection
 from crud import save_prediction, get_all_predictions, get_patient_history
 
 app = FastAPI(title="AI Healthcare Diagnosis API")
-app
+app.include_router(auth_router, prefix)
 
 app.add_middleware(
     CORSMiddleware,
