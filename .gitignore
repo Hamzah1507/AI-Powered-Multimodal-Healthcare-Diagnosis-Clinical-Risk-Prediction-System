@@ -9,6 +9,9 @@ __pycache__/
 # environment
 .env
 
+# autopush system
+.autopush.lock
+
 # data & models
 data/
 *.pt
