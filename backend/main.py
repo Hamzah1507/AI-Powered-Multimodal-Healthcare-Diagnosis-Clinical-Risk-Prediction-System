@@ -6,6 +6,7 @@ warnings.filterwarnings('ignore')
 transformers.logging.set_verbosity_error()
 
 from predict import predict_xray, predict_vitals, predict_brain
+from gradcam import generate_gradcam_xray, generate_gradcam_brain
 
 app = FastAPI(title="AI Healthcare Diagnosis API")
 
@@ -21,17 +22,13 @@ def home():
     return {"message": "AI Healthcare Diagnosis API is running! ✅"}
 
 @app.post("/predict-xray")
-async def predict_xray_endpoint(
-    image: UploadFile = File(...)
-):
+async def predict_xray_endpoint(image: UploadFile = File(...)):
     image_bytes = await image.read()
     result = predict_xray(image_bytes)
     return {"status": "success", **result}
 
 @app.post("/predict-brain")
-async def predict_brain_endpoint(
-    image: UploadFile = File(...)
-):
+async def predict_brain_endpoint(image: UploadFile = File(...)):
     image_bytes = await image.read()
     result = predict_brain(image_bytes)
     if result.get("error"):
@@ -53,4 +50,16 @@ async def predict_vitals_endpoint(
               skin_thickness, insulin, bmi,
               diabetes_pedigree, age]
     result = predict_vitals(vitals)
+    return {"status": "success", **result}
+
+@app.post("/gradcam-xray")
+async def gradcam_xray_endpoint(image: UploadFile = File(...)):
+    image_bytes = await image.read()
+    result = generate_gradcam_xray(image_bytes)
+    return {"status": "success", **result}
+
+@app.post("/gradcam-brain")
+async def gradcam_brain_endpoint(image: UploadFile = File(...)):
+    image_bytes = await image.read()
+    result = generate_gradcam_brain(image_bytes)
     return {"status": "success", **result}
