@@ -85,6 +85,55 @@ export default function App() {
     setGradcamLoading(false)
   }
 
+  const downloadReport = async () => {
+  if (!image) return
+  try {
+    const form = new FormData()
+    form.append('image', image)
+    form.append('module', module)
+    form.append('patient_name', patient.name || '')
+    form.append('patient_id', patient.id || '')
+    form.append('patient_age', patient.age || '')
+    form.append('patient_gender', patient.gender || 'Male')
+
+    if (module === 'xray' && xrayResult && vitalsResult) {
+      form.append('xray_diagnosis', xrayResult.diagnosis)
+      form.append('xray_risk_score', xrayResult.risk_score)
+      form.append('xray_prob_normal', xrayResult.probabilities['Normal'])
+      form.append('xray_prob_pneumonia', xrayResult.probabilities['Pneumonia'])
+      form.append('vitals_diagnosis', vitalsResult.diagnosis)
+      form.append('vitals_risk_score', vitalsResult.risk_score)
+      form.append('vitals_prob_no_diabetes', vitalsResult.probabilities['No Diabetes'])
+      form.append('vitals_prob_diabetes', vitalsResult.probabilities['Diabetes'])
+      form.append('heatmap', xrayHeatmap || '')
+    }
+
+    if (module === 'brain' && brainResult) {
+      form.append('brain_diagnosis', brainResult.diagnosis)
+      form.append('brain_risk_score', brainResult.risk_score)
+      form.append('brain_prob_glioma', brainResult.probabilities['Glioma'])
+      form.append('brain_prob_meningioma', brainResult.probabilities['Meningioma'])
+      form.append('brain_prob_no_tumor', brainResult.probabilities['No Tumor'])
+      form.append('brain_prob_pituitary', brainResult.probabilities['Pituitary'])
+      form.append('heatmap', brainHeatmap || '')
+    }
+
+    const res = await axios.post(`${API}/generate-report`, form,
+      { responseType: 'blob' })
+
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download',
+      `MediAI_Report_${patient.name || 'Patient'}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  } catch {
+    setError('Failed to generate PDF report!')
+  }
+}
+
   const riskColor = (s) => s >= 70 ? '#dc2626' : s >= 40 ? '#d97706' : '#16a34a'
   const riskBg = (s) => s >= 70 ? '#fef2f2' : s >= 40 ? '#fffbeb' : '#f0fdf4'
   const riskLabel = (s) => s >= 70 ? 'High Risk' : s >= 40 ? 'Medium Risk' : 'Low Risk'
