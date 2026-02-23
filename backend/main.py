@@ -9,6 +9,8 @@ transformers.logging.set_verbosity_error()
 from predict import predict_xray, predict_vitals, predict_brain
 from gradcam import generate_gradcam_xray, generate_gradcam_brain
 from report import generate_report
+from database import predictions_collection
+from crud import save_prediction, get_all_predictions, get_patient_history
 
 app = FastAPI(title="AI Healthcare Diagnosis API")
 
@@ -148,3 +150,20 @@ async def generate_report_endpoint(
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+# ─── Database & History Endpoints ───────────────────────────────────────────
+
+@app.post("/save-prediction")
+async def save_prediction_endpoint(data: dict):
+    id = await save_prediction(data)
+    return {"status": "success", "id": id}
+
+@app.get("/history")
+async def get_history():
+    records = await get_all_predictions()
+    return {"status": "success", "data": records}
+
+@app.get("/history/{patient_id}")
+async def get_patient_history_endpoint(patient_id: str):
+    records = await get_patient_history(patient_id)
+    return {"status": "success", "data": records}
