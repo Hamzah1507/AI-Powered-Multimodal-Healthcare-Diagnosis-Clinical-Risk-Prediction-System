@@ -2,113 +2,190 @@ export default function Welcome({ onLogin, onRegister }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)',
+      background: '#ffffff',
       display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+      fontFamily: "'Georgia', 'Times New Roman', serif",
     }}>
+      {/* Left Panel */}
       <div style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '24px',
-        padding: '56px 64px',
-        textAlign: 'center',
-        maxWidth: '520px',
-        width: '90%',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+        width: '50%',
+        background: 'linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '80px',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        {/* Subtle grid pattern */}
         <div style={{
-          background: 'linear-gradient(135deg, #2563eb, #0ea5e9)',
-          borderRadius: '20px',
-          padding: '16px',
-          fontSize: '40px',
-          display: 'inline-block',
-          marginBottom: '24px'
-        }}>🏥</div>
+          position: 'absolute', inset: 0,
+          backgroundImage: 'radial-gradient(circle, #2563eb15 1px, transparent 1px)',
+          backgroundSize: '32px 32px'
+        }} />
 
-        <h1 style={{
-          fontSize: '32px',
-          fontWeight: '900',
-          color: 'white',
-          marginBottom: '8px'
-        }}>MediAI Diagnostics</h1>
-
-        <p style={{
-          color: 'rgba(255,255,255,0.6)',
-          fontSize: '15px',
-          marginBottom: '8px'
-        }}>AI-Powered Clinical Decision Support</p>
-
-        <p style={{
-          color: 'rgba(255,255,255,0.4)',
-          fontSize: '12px',
-          marginBottom: '40px'
-        }}>GLS University Capstone Project 2025-26</p>
-
+        {/* Decorative circle */}
         <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '8px',
-          justifyContent: 'center',
-          marginBottom: '40px'
-        }}>
-          {[['🫁','Chest X-Ray'],['🧠','Brain MRI'],['🔥','Grad-CAM'],['📄','PDF Reports'],['🗄️','Patient History']].map(([icon, label]) => (
-            <div key={label} style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '20px',
-              padding: '6px 14px',
-              color: 'rgba(255,255,255,0.8)',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <span>{icon}</span> {label}
-            </div>
-          ))}
+          position: 'absolute', bottom: '-80px', right: '-80px',
+          width: '320px', height: '320px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, #2563eb18, #0ea5e918)',
+          border: '1px solid #2563eb10'
+        }} />
+        <div style={{
+          position: 'absolute', top: '40px', right: '60px',
+          width: '120px', height: '120px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, #2563eb10, transparent)',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Logo */}
+          <div style={{ marginBottom: '48px' }}>
+            <span style={{
+              fontSize: '13px', fontWeight: '700', letterSpacing: '4px',
+              color: '#2563eb', textTransform: 'uppercase',
+              fontFamily: "'Helvetica Neue', sans-serif"
+            }}>MediAI</span>
+          </div>
+
+          <h1 style={{
+            fontSize: '52px', fontWeight: '300', lineHeight: 1.15,
+            color: '#0f172a', marginBottom: '24px', letterSpacing: '-1px'
+          }}>
+            Clinical AI<br />
+            <span style={{ fontWeight: '700', color: '#2563eb' }}>Diagnostics</span>
+          </h1>
+
+          <p style={{
+            fontSize: '17px', color: '#64748b', lineHeight: 1.7,
+            marginBottom: '48px', maxWidth: '380px',
+            fontFamily: "'Helvetica Neue', sans-serif", fontWeight: '300'
+          }}>
+            AI-powered medical imaging analysis for pneumonia detection, brain tumor classification, and diabetes risk prediction.
+          </p>
+
+          {/* Stats row */}
+          <div style={{ display: 'flex', gap: '40px' }}>
+            {[['98%', 'X-Ray Accuracy'], ['94.75%', 'MRI Accuracy'], ['4', 'Tumor Classes']].map(([val, label]) => (
+              <div key={label}>
+                <p style={{
+                  fontSize: '26px', fontWeight: '700', color: '#0f172a',
+                  fontFamily: "'Helvetica Neue', sans-serif", letterSpacing: '-0.5px'
+                }}>{val}</p>
+                <p style={{
+                  fontSize: '11px', color: '#94a3b8', marginTop: '2px',
+                  fontFamily: "'Helvetica Neue', sans-serif",
+                  textTransform: 'uppercase', letterSpacing: '1px'
+                }}>{label}</p>
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Right Panel */}
+      <div style={{
+        width: '50%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '80px',
+        background: '#ffffff'
+      }}>
+        <div style={{ width: '100%', maxWidth: '380px' }}>
+
+          {/* Header */}
+          <div style={{ marginBottom: '48px' }}>
+            <h2 style={{
+              fontSize: '28px', fontWeight: '300', color: '#0f172a',
+              marginBottom: '8px', letterSpacing: '-0.5px'
+            }}>Welcome back</h2>
+            <p style={{
+              fontSize: '14px', color: '#94a3b8',
+              fontFamily: "'Helvetica Neue', sans-serif"
+            }}>Sign in to access your clinical dashboard</p>
+          </div>
+
+          {/* Login Button */}
           <button onClick={onLogin} style={{
-            width: '100%',
-            padding: '16px',
-            background: 'linear-gradient(135deg, #2563eb, #0ea5e9)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            fontSize: '16px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(37,99,235,0.4)'
-          }}>
-            🔐 Login to Dashboard
+            width: '100%', padding: '16px 24px',
+            background: '#0f172a', border: 'none', borderRadius: '4px',
+            color: 'white', fontSize: '14px', fontWeight: '500',
+            cursor: 'pointer', letterSpacing: '0.5px', marginBottom: '12px',
+            fontFamily: "'Helvetica Neue', sans-serif",
+            transition: 'all 0.2s',
+          }}
+            onMouseEnter={e => e.target.style.background = '#2563eb'}
+            onMouseLeave={e => e.target.style.background = '#0f172a'}
+          >
+            Sign In
           </button>
 
+          {/* Divider */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '16px',
+            margin: '24px 0'
+          }}>
+            <div style={{ flex: 1, height: '1px', background: '#f1f5f9' }} />
+            <span style={{
+              fontSize: '12px', color: '#cbd5e1',
+              fontFamily: "'Helvetica Neue', sans-serif"
+            }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: '#f1f5f9' }} />
+          </div>
+
+          {/* Register Button */}
           <button onClick={onRegister} style={{
-            width: '100%',
-            padding: '16px',
-            background: 'transparent',
-            border: '1.5px solid rgba(255,255,255,0.2)',
-            borderRadius: '12px',
-            color: 'white',
-            fontSize: '16px',
-            fontWeight: '700',
-            cursor: 'pointer'
-          }}>
-            ✨ Create New Account
+            width: '100%', padding: '16px 24px',
+            background: 'white', border: '1px solid #e2e8f0', borderRadius: '4px',
+            color: '#0f172a', fontSize: '14px', fontWeight: '500',
+            cursor: 'pointer', letterSpacing: '0.5px',
+            fontFamily: "'Helvetica Neue', sans-serif",
+            transition: 'all 0.2s'
+          }}
+            onMouseEnter={e => { e.target.style.borderColor = '#2563eb'; e.target.style.color = '#2563eb' }}
+            onMouseLeave={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.color = '#0f172a' }}
+          >
+            Create Account
           </button>
-        </div>
 
-        <p style={{
-          color: 'rgba(255,255,255,0.3)',
-          fontSize: '12px',
-          marginTop: '32px'
-        }}>
-          Integrated MSc(IT) • Sahana System Limited
-        </p>
+          {/* Features */}
+          <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #f8fafc' }}>
+            {[
+              ['Chest X-Ray Analysis', 'Pneumonia detection with Grad-CAM'],
+              ['Brain MRI Scanning', '4-class tumor classification'],
+              ['Patient Records', 'Secure MongoDB storage']
+            ].map(([title, desc]) => (
+              <div key={title} style={{
+                display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'
+              }}>
+                <div style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: '#2563eb', flexShrink: 0
+                }} />
+                <div>
+                  <p style={{
+                    fontSize: '13px', fontWeight: '600', color: '#0f172a',
+                    fontFamily: "'Helvetica Neue', sans-serif"
+                  }}>{title}</p>
+                  <p style={{
+                    fontSize: '12px', color: '#94a3b8',
+                    fontFamily: "'Helvetica Neue', sans-serif"
+                  }}>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <p style={{
+            marginTop: '32px', fontSize: '11px', color: '#cbd5e1',
+            fontFamily: "'Helvetica Neue', sans-serif",
+            textAlign: 'center', letterSpacing: '0.5px'
+          }}>
+            GLS University · Capstone 2025–26
+          </p>
+        </div>
       </div>
     </div>
   )
