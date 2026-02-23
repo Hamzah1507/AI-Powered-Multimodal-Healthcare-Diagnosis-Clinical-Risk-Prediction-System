@@ -51,8 +51,10 @@ export default function App() {
     setImage(null); setPreview(null); setError(null); setSavedMsg(null)
     setXrayResult(null); setVitalsResult(null); setBrainResult(null)
     setXrayHeatmap(null); setBrainHeatmap(null)
-    setVitals({ pregnancies: '', glucose: '', blood_pressure: '',
-      skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: '' })
+    setVitals({
+      pregnancies: '', glucose: '', blood_pressure: '',
+      skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: ''
+    })
     setPatient({ name: '', age: '', gender: 'Male', id: '' })
   }
 
@@ -216,10 +218,14 @@ export default function App() {
         <span style={{ fontSize: '22px' }}>{icon}</span>
         <h3 style={{ color: '#1e293b', fontSize: '16px', fontWeight: '700' }}>{title}</h3>
       </div>
-      <div style={{ background: riskBg(result.risk_score), borderRadius: '12px',
-        padding: '16px', marginBottom: '20px', border: `1px solid ${riskColor(result.risk_score)}20` }}>
-        <p style={{ color: '#64748b', fontSize: '11px', fontWeight: '700',
-          letterSpacing: '0.5px', marginBottom: '4px' }}>PRIMARY DIAGNOSIS</p>
+      <div style={{
+        background: riskBg(result.risk_score), borderRadius: '12px',
+        padding: '16px', marginBottom: '20px', border: `1px solid ${riskColor(result.risk_score)}20`
+      }}>
+        <p style={{
+          color: '#64748b', fontSize: '11px', fontWeight: '700',
+          letterSpacing: '0.5px', marginBottom: '4px'
+        }}>PRIMARY DIAGNOSIS</p>
         <p style={{ color: '#0f172a', fontSize: '24px', fontWeight: '800' }}>{result.diagnosis}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
           <span style={{ fontSize: '16px' }}>{riskIcon(result.risk_score)}</span>
@@ -230,9 +236,11 @@ export default function App() {
         </div>
       </div>
       <div style={{ background: '#f8fafc', borderRadius: '8px', height: '8px', marginBottom: '20px', overflow: 'hidden' }}>
-        <div style={{ width: `${result.risk_score}%`, height: '100%',
+        <div style={{
+          width: `${result.risk_score}%`, height: '100%',
           background: `linear-gradient(90deg, ${color}, ${riskColor(result.risk_score)})`,
-          transition: 'width 1.2s ease' }} />
+          transition: 'width 1.2s ease'
+        }} />
       </div>
       <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '12px' }}>
         PROBABILITY BREAKDOWN
@@ -244,8 +252,10 @@ export default function App() {
             <span style={{ color: '#0f172a', fontWeight: '700', fontSize: '13px' }}>{p}%</span>
           </div>
           <div style={{ background: '#f1f5f9', borderRadius: '6px', height: '7px' }}>
-            <div style={{ width: `${p}%`, height: '100%', background: color,
-              borderRadius: '6px', transition: 'width 1.2s ease' }} />
+            <div style={{
+              width: `${p}%`, height: '100%', background: color,
+              borderRadius: '6px', transition: 'width 1.2s ease'
+            }} />
           </div>
         </div>
       ))}
@@ -268,9 +278,11 @@ export default function App() {
   )
 
   const Disclaimer = () => (
-    <div style={{ background: '#fffbeb', border: '1px solid #fde68a',
+    <div style={{
+      background: '#fffbeb', border: '1px solid #fde68a',
       borderRadius: '10px', padding: '12px 18px', marginTop: '12px',
-      display: 'flex', alignItems: 'center', gap: '10px' }}>
+      display: 'flex', alignItems: 'center', gap: '10px'
+    }}>
       <span>⚠️</span>
       <p style={{ color: '#92400e', fontSize: '13px' }}>
         <strong>Medical Disclaimer:</strong> This AI-assisted diagnosis is for clinical
@@ -332,8 +344,10 @@ export default function App() {
   )
 
   const PatientBadge = () => patient.name ? (
-    <div style={{ background: 'white', borderRadius: '12px', padding: '12px 20px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9', textAlign: 'right' }}>
+    <div style={{
+      background: 'white', borderRadius: '12px', padding: '12px 20px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9', textAlign: 'right'
+    }}>
       <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700' }}>PATIENT</p>
       <p style={{ color: '#0f172a', fontWeight: '800', fontSize: '16px' }}>{patient.name}</p>
       <p style={{ color: '#64748b', fontSize: '12px' }}>
@@ -345,9 +359,11 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: '#f0f4f8' }}>
       {/* Navbar */}
-      <nav style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 32px',
+      <nav style={{
+        background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 32px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100 }}>
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ background: 'linear-gradient(135deg, #2563eb, #0ea5e9)', borderRadius: '10px', padding: '8px', fontSize: '20px' }}>🏥</div>
           <div>
@@ -365,8 +381,10 @@ export default function App() {
             }}>{icon} {label}</button>
           ))}
           {user && (
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px',
-              padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{
+              background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px',
+              padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
               <span>👤</span>
               <span style={{ color: '#16a34a', fontWeight: '700', fontSize: '13px' }}>{user.username}</span>
             </div>
@@ -388,7 +406,7 @@ export default function App() {
             {module === 'xray' ? 'Upload chest X-ray and enter patient vitals for AI-powered pneumonia and diabetes risk assessment' : 'Upload brain MRI scan for AI-powered tumor classification and risk assessment'}
           </p>
           <div style={{ display: 'flex', gap: '16px', marginTop: '20px', flexWrap: 'wrap' }}>
-            {(module === 'xray' ? [['X-Ray Accuracy','98%'],['Diabetes Accuracy','78%'],['Model','ResNet-50'],['Explainability','Grad-CAM'],['Reports','PDF Export']] : [['MRI Accuracy','94.75%'],['Tumor Types','4 Classes'],['Model','EfficientNet-B3'],['Explainability','Grad-CAM'],['Reports','PDF Export']]).map(([l, v]) => (
+            {(module === 'xray' ? [['X-Ray Accuracy', '98%'], ['Diabetes Accuracy', '78%'], ['Model', 'ResNet-50'], ['Explainability', 'Grad-CAM'], ['Reports', 'PDF Export']] : [['MRI Accuracy', '94.75%'], ['Tumor Types', '4 Classes'], ['Model', 'EfficientNet-B3'], ['Explainability', 'Grad-CAM'], ['Reports', 'PDF Export']]).map(([l, v]) => (
               <div key={l} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '10px 18px' }}>
                 <p style={{ opacity: 0.7, fontSize: '11px', fontWeight: '600' }}>{l}</p>
                 <p style={{ fontWeight: '800', fontSize: '16px' }}>{v}</p>
@@ -401,14 +419,18 @@ export default function App() {
       {/* Main Content */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
         {error && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '14px 18px',
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fecaca', padding: '14px 18px',
             borderRadius: '10px', marginBottom: '24px', color: '#dc2626', fontSize: '14px',
-            fontWeight: '500', display: 'flex', alignItems: 'center', gap: '10px' }}>⚠️ {error}</div>
+            fontWeight: '500', display: 'flex', alignItems: 'center', gap: '10px'
+          }}>⚠️ {error}</div>
         )}
         {savedMsg && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '14px 18px',
+          <div style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '14px 18px',
             borderRadius: '10px', marginBottom: '24px', color: '#16a34a', fontSize: '14px',
-            fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>{savedMsg}</div>
+            fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px'
+          }}>{savedMsg}</div>
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
@@ -425,19 +447,19 @@ export default function App() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div style={{ gridColumn: '1/-1' }}>
                   <label style={lbl}>Full Name</label>
-                  <input style={inp} placeholder="Enter patient full name" value={patient.name} onChange={e => setPatient({...patient, name: e.target.value})} />
+                  <input style={inp} placeholder="Enter patient full name" value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} />
                 </div>
                 <div>
                   <label style={lbl}>Patient ID</label>
-                  <input style={inp} placeholder="PT-001" value={patient.id} onChange={e => setPatient({...patient, id: e.target.value})} />
+                  <input style={inp} placeholder="PT-001" value={patient.id} onChange={e => setPatient({ ...patient, id: e.target.value })} />
                 </div>
                 <div>
                   <label style={lbl}>Age</label>
-                  <input style={inp} type="number" placeholder="Years" value={patient.age} onChange={e => setPatient({...patient, age: e.target.value})} />
+                  <input style={inp} type="number" placeholder="Years" value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} />
                 </div>
                 <div style={{ gridColumn: '1/-1' }}>
                   <label style={lbl}>Gender</label>
-                  <select style={inp} value={patient.gender} onChange={e => setPatient({...patient, gender: e.target.value})}>
+                  <select style={inp} value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })}>
                     <option>Male</option><option>Female</option><option>Other</option>
                   </select>
                 </div>
@@ -484,10 +506,10 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  {[['pregnancies','Pregnancies','0',''],['glucose','Glucose (mg/dL)','120','*'],['blood_pressure','Blood Pressure','80',''],['skin_thickness','Skin Thickness','20',''],['insulin','Insulin (μU/mL)','80',''],['bmi','BMI (kg/m²)','25.0','*'],['diabetes_pedigree','Diabetes Pedigree','0.5',''],['age','Age (Years)','30','*']].map(([key, label, ph, req]) => (
+                  {[['pregnancies', 'Pregnancies', '0', ''], ['glucose', 'Glucose (mg/dL)', '120', '*'], ['blood_pressure', 'Blood Pressure', '80', ''], ['skin_thickness', 'Skin Thickness', '20', ''], ['insulin', 'Insulin (μU/mL)', '80', ''], ['bmi', 'BMI (kg/m²)', '25.0', '*'], ['diabetes_pedigree', 'Diabetes Pedigree', '0.5', ''], ['age', 'Age (Years)', '30', '*']].map(([key, label, ph, req]) => (
                     <div key={key}>
                       <label style={lbl}>{label} <span style={{ color: '#ef4444' }}>{req}</span></label>
-                      <input type="number" style={inp} placeholder={ph} value={vitals[key]} onChange={e => setVitals({...vitals, [key]: e.target.value})} />
+                      <input type="number" style={inp} placeholder={ph} value={vitals[key]} onChange={e => setVitals({ ...vitals, [key]: e.target.value })} />
                     </div>
                   ))}
                 </div>
@@ -504,7 +526,7 @@ export default function App() {
                     <p style={{ fontSize: '12px', color: '#94a3b8' }}>4 tumor types supported</p>
                   </div>
                 </div>
-                {[['🔴','Glioma','Most common malignant brain tumor.','#fef2f2','#dc2626'],['🟠','Meningioma','Usually benign. Arises from meninges.','#fff7ed','#ea580c'],['🟣','Pituitary','Affects the pituitary gland.','#faf5ff','#7c3aed'],['🟢','No Tumor','No abnormality detected.','#f0fdf4','#16a34a']].map(([icon, name, desc, bg, color]) => (
+                {[['🔴', 'Glioma', 'Most common malignant brain tumor.', '#fef2f2', '#dc2626'], ['🟠', 'Meningioma', 'Usually benign. Arises from meninges.', '#fff7ed', '#ea580c'], ['🟣', 'Pituitary', 'Affects the pituitary gland.', '#faf5ff', '#7c3aed'], ['🟢', 'No Tumor', 'No abnormality detected.', '#f0fdf4', '#16a34a']].map(([icon, name, desc, bg, color]) => (
                   <div key={name} style={{ display: 'flex', gap: '14px', padding: '14px', borderRadius: '10px', marginBottom: '10px', background: bg, border: `1px solid ${color}20` }}>
                     <span style={{ fontSize: '22px' }}>{icon}</span>
                     <div>
