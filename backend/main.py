@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 import warnings
 import transformers
 warnings.filterwarnings('ignore')
@@ -7,6 +8,7 @@ transformers.logging.set_verbosity_error()
 
 from predict import predict_xray, predict_vitals, predict_brain
 from gradcam import generate_gradcam_xray, generate_gradcam_brain
+from report import generate_report
 
 app = FastAPI(title="AI Healthcare Diagnosis API")
 
@@ -63,3 +65,86 @@ async def gradcam_brain_endpoint(image: UploadFile = File(...)):
     image_bytes = await image.read()
     result = generate_gradcam_brain(image_bytes)
     return {"status": "success", **result}
+
+@app.post("/generate-report")
+async def generate_report_endpoint(
+    image: UploadFile = File(...),
+    module: str = Form(...),
+    patient_name: str = Form(''),
+    patient_id: str = Form(''),
+    patient_age: str = Form(''),
+    patient_gender: str = Form('Male'),
+    xray_diagnosis: str = Form(''),
+    xray_risk_score: int = Form(0),
+    xray_prob_normal: float = Form(0),
+    xray_prob_pneumonia: float = Form(0),
+    vitals_diagnosis: str = Form(''),
+    vitals_risk_score: int = Form(0),
+    vitals_prob_no_diabetes: float = Form(0),
+    vitals_prob_diabetes: float = Form(0),
+    brain_diagnosis: str = Form(''),
+    brain_risk_score: int = Form(0),
+    brain_prob_glioma: float = Form(0),
+    brain_prob_meningioma: float = Form(0),
+    brain_prob_no_tumor: float = Form(0),
+    brain_prob_pituitary: float = Form(0),
+    heatmap: str = Form('')
+):
+    image_bytes = await image.read()
+    patient = {
+        'name': patient_name, 'id': patient_id,
+        'age': patient_age, 'gender': patient_gender
+    }
+
+    xray_result = None
+    vitals_result = None
+    brain_result = None
+
+    if module == 'xray' and xray_diagnosis:
+        xray_result = {
+            'diagnosis': xray_diagnosis,
+            'risk_score': xray_risk_score,
+            'probabilities': {
+                'Normal': xray_prob_normal,
+                'Pneumonia': xray_prob_pneumonia
+            }
+        }
+        vitals_result = {
+            'diagnosis': vitals_diagnosis,
+            'risk_score': vitals_risk_score,
+            'probabilities': {
+                'No Diabetes': vitals_prob_no_diabetes,
+                'Diabetes': vitals_prob_diabetes
+            }
+        }
+
+    if module == 'brain' and brain_diagnosis:
+        brain_result = {
+            'diagnosis': brain_diagnosis,
+            'risk_score': brain_risk_score,
+            'probabilities': {
+                'Glioma': brain_prob_glioma,
+                'Meningioma': brain_prob_meningioma,
+                'No Tumor': brain_prob_no_tumor,
+                'Pituitary': brain_prob_pituitary
+            }
+        }
+
+    pdf_bytes = generate_report(
+        patient=patient,
+        module=module,
+        xray_result=xray_result,
+        vitals_result=vitals_result,
+        brain_result=brain_result,
+        heatmap_b64=heatmap if heatmap else None,
+        original_image_bytes=image_bytes
+    )
+
+    patient_name_clean = patient_name.replace(' ', '_') or 'Patient'
+    filename = f"MediAI_Report_{patient_name_clean}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
