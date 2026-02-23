@@ -22,9 +22,10 @@ export default function App() {
   const [gradcamLoading, setGradcamLoading] = useState(false)
   const [reportLoading, setReportLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [savedMsg, setSavedMsg] = useState(null)
 
   const reset = () => {
-    setImage(null); setPreview(null); setError(null)
+    setImage(null); setPreview(null); setError(null); setSavedMsg(null)
     setXrayResult(null); setVitalsResult(null); setBrainResult(null)
     setXrayHeatmap(null); setBrainHeatmap(null)
     setVitals({ pregnancies: '', glucose: '', blood_pressure: '',
@@ -40,8 +41,18 @@ export default function App() {
     setImage(file); setPreview(URL.createObjectURL(file)); setError(null)
   }
 
+  const savePrediction = async (data) => {
+    try {
+      await axios.post(`${API}/save-prediction`, data)
+      setSavedMsg('✅ Record saved to database!')
+      setTimeout(() => setSavedMsg(null), 4000)
+    } catch {
+      console.error('Failed to save prediction to DB')
+    }
+  }
+
   const analyze = async () => {
-    setError(null)
+    setError(null); setSavedMsg(null)
     if (!image) { setError('Please upload an image first!'); return }
     if (module === 'xray' && (!vitals.glucose || !vitals.bmi || !vitals.age)) {
       setError('Please fill in Glucose, BMI and Age!'); return
@@ -60,10 +71,40 @@ export default function App() {
           axios.post(`${API}/predict-vitals`, vForm)
         ])
         setXrayResult(xr.data); setVitalsResult(vr.data)
+
+        // Auto-save to MongoDB
+        await savePrediction({
+          patient_id: patient.id || 'N/A',
+          patient_name: patient.name || 'Unknown',
+          patient_age: patient.age || 'N/A',
+          patient_gender: patient.gender || 'Male',
+          module: 'xray',
+          diagnosis: xr.data.diagnosis,
+          risk_score: xr.data.risk_score,
+          probabilities: xr.data.probabilities,
+          vitals_diagnosis: vr.data.diagnosis,
+          vitals_risk_score: vr.data.risk_score,
+          vitals_probabilities: vr.data.probabilities,
+        })
+
       } else {
         const br = await axios.post(`${API}/predict-brain`, imgForm)
         if (br.data.status === 'error') setError(br.data.message)
-        else setBrainResult(br.data)
+        else {
+          setBrainResult(br.data)
+
+          // Auto-save to MongoDB
+          await savePrediction({
+            patient_id: patient.id || 'N/A',
+            patient_name: patient.name || 'Unknown',
+            patient_age: patient.age || 'N/A',
+            patient_gender: patient.gender || 'Male',
+            module: 'brain',
+            diagnosis: br.data.diagnosis,
+            risk_score: br.data.risk_score,
+            probabilities: br.data.probabilities,
+          })
+        }
       }
     } catch { setError('Cannot connect to backend. Make sure server is running!') }
     setLoading(false)
@@ -412,6 +453,16 @@ export default function App() {
             color: '#dc2626', fontSize: '14px', fontWeight: '500',
             display: 'flex', alignItems: 'center', gap: '10px' }}>
             ⚠️ {error}
+          </div>
+        )}
+
+        {/* DB Save Success Message */}
+        {savedMsg && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0',
+            padding: '14px 18px', borderRadius: '10px', marginBottom: '24px',
+            color: '#16a34a', fontSize: '14px', fontWeight: '600',
+            display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {savedMsg}
           </div>
         )}
 
