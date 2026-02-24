@@ -1,596 +1,469 @@
-  import { useState } from 'react'
-  import axios from 'axios'
-  import './App.css'
-  import Welcome from './Welcome'
-  import Auth from './Auth'
+import { useState } from 'react'
+import axios from 'axios'
+import './App.css'
+import Welcome from './Welcome'
+import Auth from './Auth'
 
-  const API = 'http://127.0.0.1:8000'
+const API = 'http://127.0.0.1:8000'
 
-  export default function App() {
-    const [screen, setScreen] = useState('welcome')
-    const [authMode, setAuthMode] = useState('login')
-    const [user, setUser] = useState(null)
+export default function App() {
+  const [screen, setScreen] = useState('welcome')
+  const [authMode, setAuthMode] = useState('login')
+  const [user, setUser] = useState(null)
+  const [module, setModule] = useState('xray')
+  const [image, setImage] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [patient, setPatient] = useState({ name: '', age: '', gender: 'Male', id: '' })
+  const [vitals, setVitals] = useState({ pregnancies: '', glucose: '', blood_pressure: '', skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: '' })
+  const [xrayResult, setXrayResult] = useState(null)
+  const [vitalsResult, setVitalsResult] = useState(null)
+  const [brainResult, setBrainResult] = useState(null)
+  const [xrayHeatmap, setXrayHeatmap] = useState(null)
+  const [brainHeatmap, setBrainHeatmap] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [gradcamLoading, setGradcamLoading] = useState(false)
+  const [reportLoading, setReportLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [savedMsg, setSavedMsg] = useState(null)
 
-    const [module, setModule] = useState('xray')
-    const [image, setImage] = useState(null)
-    const [preview, setPreview] = useState(null)
-    const [patient, setPatient] = useState({ name: '', age: '', gender: 'Male', id: '' })
-    const [vitals, setVitals] = useState({
-      pregnancies: '', glucose: '', blood_pressure: '',
-      skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: ''
-    })
-    const [xrayResult, setXrayResult] = useState(null)
-    const [vitalsResult, setVitalsResult] = useState(null)
-    const [brainResult, setBrainResult] = useState(null)
-    const [xrayHeatmap, setXrayHeatmap] = useState(null)
-    const [brainHeatmap, setBrainHeatmap] = useState(null)
-    const [loading, setLoading] = useState(false)
-    const [gradcamLoading, setGradcamLoading] = useState(false)
-    const [reportLoading, setReportLoading] = useState(false)
-    const [error, setError] = useState(null)
-    const [savedMsg, setSavedMsg] = useState(null)
+  if (screen === 'welcome') return <Welcome onLogin={() => { setAuthMode('login'); setScreen('auth') }} onRegister={() => { setAuthMode('register'); setScreen('auth') }} />
+  if (screen === 'auth') return <Auth mode={authMode} onSuccess={(u) => { setUser(u); setScreen('dashboard') }} onBack={() => setScreen('welcome')} />
 
-    // ── Screen Routing ───────────────────────────────────────────────────────
-    if (screen === 'welcome') return (
-      <Welcome
-        onLogin={() => { setAuthMode('login'); setScreen('auth') }}
-        onRegister={() => { setAuthMode('register'); setScreen('auth') }}
-      />
-    )
+  const reset = () => {
+    setImage(null); setPreview(null); setError(null); setSavedMsg(null)
+    setXrayResult(null); setVitalsResult(null); setBrainResult(null)
+    setXrayHeatmap(null); setBrainHeatmap(null)
+    setVitals({ pregnancies: '', glucose: '', blood_pressure: '', skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: '' })
+    setPatient({ name: '', age: '', gender: 'Male', id: '' })
+  }
 
-    if (screen === 'auth') return (
-      <Auth
-        mode={authMode}
-        onSuccess={(u) => { setUser(u); setScreen('dashboard') }}
-        onBack={() => setScreen('welcome')}
-      />
-    )
+  const switchModule = (m) => { setModule(m); reset() }
+  const handleImage = (e) => { const f = e.target.files[0]; if (!f) return; setImage(f); setPreview(URL.createObjectURL(f)); setError(null) }
 
-    // ── Dashboard Logic ──────────────────────────────────────────────────────
-    const reset = () => {
-      setImage(null); setPreview(null); setError(null); setSavedMsg(null)
-      setXrayResult(null); setVitalsResult(null); setBrainResult(null)
-      setXrayHeatmap(null); setBrainHeatmap(null)
-      setVitals({
-        pregnancies: '', glucose: '', blood_pressure: '',
-        skin_thickness: '', insulin: '', bmi: '', diabetes_pedigree: '', age: ''
-      })
-      setPatient({ name: '', age: '', gender: 'Male', id: '' })
-    }
+  const savePrediction = async (data) => {
+    try { await axios.post(`${API}/save-prediction`, data); setSavedMsg('Saved to database'); setTimeout(() => setSavedMsg(null), 4000) }
+    catch { console.error('Failed to save') }
+  }
 
-    const switchModule = (m) => { setModule(m); reset() }
-
-    const handleImage = (e) => {
-      const file = e.target.files[0]
-      if (!file) return
-      setImage(file); setPreview(URL.createObjectURL(file)); setError(null)
-    }
-
-    const savePrediction = async (data) => {
-      try {
-        await axios.post(`${API}/save-prediction`, data)
-        setSavedMsg('✅ Record saved to database!')
-        setTimeout(() => setSavedMsg(null), 4000)
-      } catch {
-        console.error('Failed to save prediction to DB')
+  const analyze = async () => {
+    setError(null); setSavedMsg(null)
+    if (!image) { setError('Please upload an image first'); return }
+    if (module === 'xray' && (!vitals.glucose || !vitals.bmi || !vitals.age)) { setError('Please fill Glucose, BMI and Age'); return }
+    setLoading(true); setXrayResult(null); setVitalsResult(null); setBrainResult(null); setXrayHeatmap(null); setBrainHeatmap(null)
+    try {
+      const imgForm = new FormData(); imgForm.append('image', image)
+      if (module === 'xray') {
+        const vForm = new FormData(); Object.keys(vitals).forEach(k => vForm.append(k, vitals[k] || 0))
+        const [xr, vr] = await Promise.all([axios.post(`${API}/predict-xray`, imgForm), axios.post(`${API}/predict-vitals`, vForm)])
+        setXrayResult(xr.data); setVitalsResult(vr.data)
+        await savePrediction({ patient_id: patient.id || 'N/A', patient_name: patient.name || 'Unknown', patient_age: patient.age || 'N/A', patient_gender: patient.gender, module: 'xray', diagnosis: xr.data.diagnosis, risk_score: xr.data.risk_score, probabilities: xr.data.probabilities, vitals_diagnosis: vr.data.diagnosis, vitals_risk_score: vr.data.risk_score, vitals_probabilities: vr.data.probabilities, saved_by: user?.username || 'Unknown' })
+      } else {
+        const br = await axios.post(`${API}/predict-brain`, imgForm)
+        if (br.data.status === 'error') setError(br.data.message)
+        else { setBrainResult(br.data); await savePrediction({ patient_id: patient.id || 'N/A', patient_name: patient.name || 'Unknown', patient_age: patient.age || 'N/A', patient_gender: patient.gender, module: 'brain', diagnosis: br.data.diagnosis, risk_score: br.data.risk_score, probabilities: br.data.probabilities, saved_by: user?.username || 'Unknown' }) }
       }
-    }
+    } catch { setError('Cannot connect to backend. Make sure server is running.') }
+    setLoading(false)
+  }
 
-    const analyze = async () => {
-      setError(null); setSavedMsg(null)
-      if (!image) { setError('Please upload an image first!'); return }
-      if (module === 'xray' && (!vitals.glucose || !vitals.bmi || !vitals.age)) {
-        setError('Please fill in Glucose, BMI and Age!'); return
-      }
-      setLoading(true)
-      setXrayResult(null); setVitalsResult(null); setBrainResult(null)
-      setXrayHeatmap(null); setBrainHeatmap(null)
-      try {
-        const imgForm = new FormData()
-        imgForm.append('image', image)
-        if (module === 'xray') {
-          const vForm = new FormData()
-          Object.keys(vitals).forEach(k => vForm.append(k, vitals[k] || 0))
-          const [xr, vr] = await Promise.all([
-            axios.post(`${API}/predict-xray`, imgForm),
-            axios.post(`${API}/predict-vitals`, vForm)
-          ])
-          setXrayResult(xr.data); setVitalsResult(vr.data)
-          await savePrediction({
-            patient_id: patient.id || 'N/A',
-            patient_name: patient.name || 'Unknown',
-            patient_age: patient.age || 'N/A',
-            patient_gender: patient.gender || 'Male',
-            module: 'xray',
-            diagnosis: xr.data.diagnosis,
-            risk_score: xr.data.risk_score,
-            probabilities: xr.data.probabilities,
-            vitals_diagnosis: vr.data.diagnosis,
-            vitals_risk_score: vr.data.risk_score,
-            vitals_probabilities: vr.data.probabilities,
-            saved_by: user?.username || 'Unknown'
-          })
-        } else {
-          const br = await axios.post(`${API}/predict-brain`, imgForm)
-          if (br.data.status === 'error') setError(br.data.message)
-          else {
-            setBrainResult(br.data)
-            await savePrediction({
-              patient_id: patient.id || 'N/A',
-              patient_name: patient.name || 'Unknown',
-              patient_age: patient.age || 'N/A',
-              patient_gender: patient.gender || 'Male',
-              module: 'brain',
-              diagnosis: br.data.diagnosis,
-              risk_score: br.data.risk_score,
-              probabilities: br.data.probabilities,
-              saved_by: user?.username || 'Unknown'
-            })
-          }
-        }
-      } catch { setError('Cannot connect to backend. Make sure server is running!') }
-      setLoading(false)
-    }
+  const generateHeatmaps = async () => {
+    if (!image) return; setGradcamLoading(true)
+    try {
+      const f = new FormData(); f.append('image', image)
+      if (module === 'xray') { const r = await axios.post(`${API}/gradcam-xray`, f); setXrayHeatmap(r.data.heatmap) }
+      else { const r = await axios.post(`${API}/gradcam-brain`, f); setBrainHeatmap(r.data.heatmap) }
+    } catch { setError('Failed to generate heatmap') }
+    setGradcamLoading(false)
+  }
 
-    const generateHeatmaps = async () => {
-      if (!image) return
-      setGradcamLoading(true)
-      try {
-        const imgForm = new FormData()
-        imgForm.append('image', image)
-        if (module === 'xray') {
-          const res = await axios.post(`${API}/gradcam-xray`, imgForm)
-          setXrayHeatmap(res.data.heatmap)
-        } else {
-          const res = await axios.post(`${API}/gradcam-brain`, imgForm)
-          setBrainHeatmap(res.data.heatmap)
-        }
-      } catch { setError('Failed to generate heatmap!') }
-      setGradcamLoading(false)
-    }
+  const downloadReport = async () => {
+    if (!image) return; setReportLoading(true)
+    try {
+      const form = new FormData()
+      form.append('image', image); form.append('module', module); form.append('patient_name', patient.name || ''); form.append('patient_id', patient.id || ''); form.append('patient_age', patient.age || ''); form.append('patient_gender', patient.gender || 'Male')
+      if (module === 'xray' && xrayResult && vitalsResult) { form.append('xray_diagnosis', xrayResult.diagnosis); form.append('xray_risk_score', xrayResult.risk_score); form.append('xray_prob_normal', xrayResult.probabilities['Normal']); form.append('xray_prob_pneumonia', xrayResult.probabilities['Pneumonia']); form.append('vitals_diagnosis', vitalsResult.diagnosis); form.append('vitals_risk_score', vitalsResult.risk_score); form.append('vitals_prob_no_diabetes', vitalsResult.probabilities['No Diabetes']); form.append('vitals_prob_diabetes', vitalsResult.probabilities['Diabetes']); form.append('heatmap', xrayHeatmap || '') }
+      if (module === 'brain' && brainResult) { form.append('brain_diagnosis', brainResult.diagnosis); form.append('brain_risk_score', brainResult.risk_score); form.append('brain_prob_glioma', brainResult.probabilities['Glioma']); form.append('brain_prob_meningioma', brainResult.probabilities['Meningioma']); form.append('brain_prob_no_tumor', brainResult.probabilities['No Tumor']); form.append('brain_prob_pituitary', brainResult.probabilities['Pituitary']); form.append('heatmap', brainHeatmap || '') }
+      const res = await axios.post(`${API}/generate-report`, form, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data])); const a = document.createElement('a'); a.href = url; a.setAttribute('download', `MediAI_${patient.name || 'Report'}.pdf`); document.body.appendChild(a); a.click(); a.remove()
+    } catch { setError('Failed to generate PDF') }
+    setReportLoading(false)
+  }
 
-    const downloadReport = async () => {
-      if (!image) return
-      setReportLoading(true)
-      try {
-        const form = new FormData()
-        form.append('image', image)
-        form.append('module', module)
-        form.append('patient_name', patient.name || '')
-        form.append('patient_id', patient.id || '')
-        form.append('patient_age', patient.age || '')
-        form.append('patient_gender', patient.gender || 'Male')
-        if (module === 'xray' && xrayResult && vitalsResult) {
-          form.append('xray_diagnosis', xrayResult.diagnosis)
-          form.append('xray_risk_score', xrayResult.risk_score)
-          form.append('xray_prob_normal', xrayResult.probabilities['Normal'])
-          form.append('xray_prob_pneumonia', xrayResult.probabilities['Pneumonia'])
-          form.append('vitals_diagnosis', vitalsResult.diagnosis)
-          form.append('vitals_risk_score', vitalsResult.risk_score)
-          form.append('vitals_prob_no_diabetes', vitalsResult.probabilities['No Diabetes'])
-          form.append('vitals_prob_diabetes', vitalsResult.probabilities['Diabetes'])
-          form.append('heatmap', xrayHeatmap || '')
-        }
-        if (module === 'brain' && brainResult) {
-          form.append('brain_diagnosis', brainResult.diagnosis)
-          form.append('brain_risk_score', brainResult.risk_score)
-          form.append('brain_prob_glioma', brainResult.probabilities['Glioma'])
-          form.append('brain_prob_meningioma', brainResult.probabilities['Meningioma'])
-          form.append('brain_prob_no_tumor', brainResult.probabilities['No Tumor'])
-          form.append('brain_prob_pituitary', brainResult.probabilities['Pituitary'])
-          form.append('heatmap', brainHeatmap || '')
-        }
-        const res = await axios.post(`${API}/generate-report`, form, { responseType: 'blob' })
-        const url = window.URL.createObjectURL(new Blob([res.data]))
-        const link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', `MediAI_Report_${patient.name || 'Patient'}.pdf`)
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-      } catch { setError('Failed to generate PDF report!') }
-      setReportLoading(false)
-    }
+  const isXray = module === 'xray'
+  const accent = isXray ? '#2563eb' : '#7c3aed'
+  const riskColor = s => s >= 70 ? '#ef4444' : s >= 40 ? '#f59e0b' : '#10b981'
+  const riskBg = s => s >= 70 ? '#fef2f2' : s >= 40 ? '#fefce8' : '#f0fdf4'
+  const riskBorder = s => s >= 70 ? '#fecaca' : s >= 40 ? '#fef08a' : '#bbf7d0'
+  const riskLabel = s => s >= 70 ? 'High Risk' : s >= 40 ? 'Moderate Risk' : 'Low Risk'
 
-    const riskColor = (s) => s >= 70 ? '#dc2626' : s >= 40 ? '#d97706' : '#16a34a'
-    const riskBg = (s) => s >= 70 ? '#fef2f2' : s >= 40 ? '#fffbeb' : '#f0fdf4'
-    const riskLabel = (s) => s >= 70 ? 'High Risk' : s >= 40 ? 'Medium Risk' : 'Low Risk'
-    const riskIcon = (s) => s >= 70 ? '🔴' : s >= 40 ? '🟡' : '🟢'
+  // ─── SHARED STYLES ───────────────────────────────────────────────────────
+  const G = {
+    page: { minHeight: '100vh', background: '#f8fafc', fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#0f172a' },
+    nav: { height: '60px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', position: 'sticky', top: 0, zIndex: 100 },
+    banner: { background: isXray ? 'linear-gradient(135deg,#1e3a8a,#3b82f6)' : 'linear-gradient(135deg,#4c1d95,#8b5cf6)', padding: '28px 32px', color: '#fff' },
+    body: { maxWidth: '1160px', margin: '0 auto', padding: '28px 32px' },
+    card: { background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '22px', marginBottom: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' },
+    inp: { width: '100%', padding: '10px 13px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', background: '#f8fafc', boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit', transition: 'border-color .2s,box-shadow .2s', marginTop: '5px' },
+    lbl: { fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'block' },
+    chip: { background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '10px', padding: '10px 18px', backdropFilter: 'blur(6px)' },
+  }
 
-    const inp = {
-      width: '100%', padding: '10px 14px', borderRadius: '8px',
-      border: '1.5px solid #e2e8f0', background: 'white',
-      color: '#1e293b', fontSize: '14px', marginTop: '5px', boxSizing: 'border-box'
-    }
-    const lbl = {
-      fontSize: '12px', fontWeight: '600', color: '#64748b',
-      textTransform: 'uppercase', letterSpacing: '0.5px'
-    }
-    const card = {
-      background: 'white', borderRadius: '16px', padding: '24px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)',
-      marginBottom: '20px', border: '1px solid #f1f5f9'
-    }
-
-    const ResultCard = ({ icon, title, result, color }) => (
-      <div style={{ ...card, flex: 1, borderTop: `4px solid ${color}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <span style={{ fontSize: '22px' }}>{icon}</span>
-          <h3 style={{ color: '#1e293b', fontSize: '16px', fontWeight: '700' }}>{title}</h3>
+  // ─── RESULT CARD ─────────────────────────────────────────────────────────
+  const ResultCard = ({ icon, title, result, color }) => (
+    <div style={{ ...G.card, flex: 1, marginBottom: 0, borderTop: `3px solid ${color}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+        <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{icon}</div>
+        <div>
+          <p style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>{title}</p>
+          <p style={{ fontSize: '11px', color: '#94a3b8' }}>AI Analysis Complete</p>
         </div>
-        <div style={{
-          background: riskBg(result.risk_score), borderRadius: '12px',
-          padding: '16px', marginBottom: '20px', border: `1px solid ${riskColor(result.risk_score)}20`
-        }}>
-          <p style={{
-            color: '#64748b', fontSize: '11px', fontWeight: '700',
-            letterSpacing: '0.5px', marginBottom: '4px'
-          }}>PRIMARY DIAGNOSIS</p>
-          <p style={{ color: '#0f172a', fontSize: '24px', fontWeight: '800' }}>{result.diagnosis}</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
-            <span style={{ fontSize: '16px' }}>{riskIcon(result.risk_score)}</span>
-            <span style={{ color: riskColor(result.risk_score), fontWeight: '700', fontSize: '14px' }}>
-              {riskLabel(result.risk_score)}
-            </span>
-            <span style={{ color: '#94a3b8', fontSize: '13px' }}>— Score: {result.risk_score}/100</span>
-          </div>
-        </div>
-        <div style={{ background: '#f8fafc', borderRadius: '8px', height: '8px', marginBottom: '20px', overflow: 'hidden' }}>
-          <div style={{
-            width: `${result.risk_score}%`, height: '100%',
-            background: `linear-gradient(90deg, ${color}, ${riskColor(result.risk_score)})`,
-            transition: 'width 1.2s ease'
-          }} />
-        </div>
-        <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '12px' }}>
-          PROBABILITY BREAKDOWN
-        </p>
-        {Object.entries(result.probabilities).map(([d, p]) => (
-          <div key={d} style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-              <span style={{ color: '#475569', fontSize: '13px', fontWeight: '500' }}>{d}</span>
-              <span style={{ color: '#0f172a', fontWeight: '700', fontSize: '13px' }}>{p}%</span>
-            </div>
-            <div style={{ background: '#f1f5f9', borderRadius: '6px', height: '7px' }}>
-              <div style={{
-                width: `${p}%`, height: '100%', background: color,
-                borderRadius: '6px', transition: 'width 1.2s ease'
-              }} />
-            </div>
-          </div>
-        ))}
       </div>
-    )
 
-    const DownloadButton = ({ color }) => (
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-        <button onClick={downloadReport} disabled={reportLoading} style={{
-          padding: '12px 28px', border: 'none', borderRadius: '10px',
-          background: reportLoading ? '#e2e8f0' : `linear-gradient(135deg, ${color}, ${color}cc)`,
-          color: reportLoading ? '#94a3b8' : 'white', fontWeight: '700', fontSize: '15px',
-          cursor: reportLoading ? 'not-allowed' : 'pointer',
-          boxShadow: reportLoading ? 'none' : `0 4px 14px ${color}40`,
-          display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
-        }}>
-          {reportLoading ? '⏳ Generating PDF...' : '📄 Download PDF Report'}
+      <div style={{ background: riskBg(result.risk_score), border: `1px solid ${riskBorder(result.risk_score)}`, borderRadius: '12px', padding: '16px 18px', marginBottom: '16px' }}>
+        <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '1.2px', marginBottom: '6px' }}>PRIMARY DIAGNOSIS</p>
+        <p style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1.1 }}>{result.diagnosis}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+          <span style={{ background: riskColor(result.risk_score), color: '#fff', fontSize: '10px', fontWeight: '700', padding: '3px 10px', borderRadius: '20px' }}>{riskLabel(result.risk_score)}</span>
+          <span style={{ color: '#94a3b8', fontSize: '12px' }}>Score: <b style={{ color: riskColor(result.risk_score) }}>{result.risk_score}</b>/100</span>
+        </div>
+      </div>
+
+      <div style={{ background: '#f1f5f9', borderRadius: '6px', height: '6px', overflow: 'hidden', marginBottom: '18px' }}>
+        <div style={{ width: `${result.risk_score}%`, height: '100%', background: `linear-gradient(90deg,${color},${riskColor(result.risk_score)})`, borderRadius: '6px', transition: 'width 1.4s cubic-bezier(.4,0,.2,1)' }} />
+      </div>
+
+      <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '1.2px', marginBottom: '12px' }}>PROBABILITY BREAKDOWN</p>
+      {Object.entries(result.probabilities).map(([d, p]) => (
+        <div key={d} style={{ marginBottom: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+            <span style={{ fontSize: '12px', color: '#475569', fontWeight: '500' }}>{d}</span>
+            <span style={{ fontSize: '12px', fontWeight: '800', color: '#0f172a' }}>{p}%</span>
+          </div>
+          <div style={{ background: '#f1f5f9', borderRadius: '4px', height: '5px', overflow: 'hidden' }}>
+            <div style={{ width: `${p}%`, height: '100%', background: color, borderRadius: '4px', transition: 'width 1.4s cubic-bezier(.4,0,.2,1)' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  // ─── HEATMAP ─────────────────────────────────────────────────────────────
+  const HeatmapSection = ({ heatmap, color }) => (
+    <div style={{ ...G.card, marginTop: '20px', borderColor: `${color}30` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div>
+          <p style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>Grad-CAM Heatmap</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>AI attention visualization</p>
+        </div>
+        <button onClick={generateHeatmaps} disabled={gradcamLoading}
+          style={{ padding: '9px 18px', border: 'none', borderRadius: '8px', background: gradcamLoading ? '#f1f5f9' : color, color: gradcamLoading ? '#94a3b8' : '#fff', fontWeight: '600', fontSize: '12px', cursor: gradcamLoading ? 'not-allowed' : 'pointer', transition: 'opacity .2s' }}>
+          {gradcamLoading ? 'Generating...' : 'Generate Heatmap'}
         </button>
       </div>
-    )
-
-    const Disclaimer = () => (
-      <div style={{
-        background: '#fffbeb', border: '1px solid #fde68a',
-        borderRadius: '10px', padding: '12px 18px', marginTop: '12px',
-        display: 'flex', alignItems: 'center', gap: '10px'
-      }}>
-        <span>⚠️</span>
-        <p style={{ color: '#92400e', fontSize: '13px' }}>
-          <strong>Medical Disclaimer:</strong> This AI-assisted diagnosis is for clinical
-          decision support only. Always consult a qualified medical professional before making any clinical decisions.
-        </p>
-      </div>
-    )
-
-    const HeatmapSection = ({ heatmap, color, borderColor }) => (
-      <div style={{ ...card, border: `1px solid ${borderColor}`, marginTop: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div>
-            <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>🔥 AI Attention Heatmap (Grad-CAM)</h3>
-            <p style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>Visualize which region the AI focused on to make its diagnosis</p>
+      {!heatmap && !gradcamLoading && (
+        <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '32px', textAlign: 'center', border: '2px dashed #e2e8f0' }}>
+          <p style={{ color: '#475569', fontWeight: '600', fontSize: '13px' }}>Click "Generate Heatmap" to visualize AI attention regions</p>
+          <p style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>Red/yellow = high attention · Blue = low attention</p>
+        </div>
+      )}
+      {gradcamLoading && <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '32px', textAlign: 'center' }}><p style={{ color: '#64748b', fontWeight: '600', fontSize: '13px' }}>Computing heatmap...</p></div>}
+      {heatmap && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+            {[['Original Scan', preview], ['AI Attention Map', `data:image/jpeg;base64,${heatmap}`]].map(([lbl, src]) => (
+              <div key={lbl} style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>{lbl}</p>
+                <img src={src} alt={lbl} style={{ width: '100%', borderRadius: '10px', objectFit: 'contain', maxHeight: '220px', background: '#000' }} />
+              </div>
+            ))}
           </div>
-          <button onClick={generateHeatmaps} disabled={gradcamLoading} style={{
-            padding: '10px 20px', border: 'none', borderRadius: '8px',
-            background: gradcamLoading ? '#e2e8f0' : `linear-gradient(135deg, ${color}, ${color}dd)`,
-            color: gradcamLoading ? '#94a3b8' : 'white', fontWeight: '700', fontSize: '14px',
-            cursor: gradcamLoading ? 'not-allowed' : 'pointer',
-            boxShadow: gradcamLoading ? 'none' : `0 4px 12px ${color}40`
-          }}>
-            {gradcamLoading ? '⏳ Generating...' : '🔥 Generate Heatmap'}
+          <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 14px', border: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '12px', color: '#64748b' }}>Red/yellow regions = AI detected abnormality · Blue regions = lower diagnostic significance</p>
+          </div>
+        </>
+      )}
+    </div>
+  )
+
+  // ─── MAIN RENDER ─────────────────────────────────────────────────────────
+  return (
+    <div style={G.page}>
+
+      {/* ── NAVBAR ── */}
+      <nav style={G.nav}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '15px' }}>+</div>
+          <div>
+            <p style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', lineHeight: 1, letterSpacing: '-0.3px' }}>MediAI Diagnostics</p>
+            <p style={{ fontSize: '10px', color: '#94a3b8', letterSpacing: '0.3px' }}>AI-Powered Clinical Decision Support</p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {[['xray', 'Chest X-Ray'], ['brain', 'Brain MRI']].map(([m, lbl]) => (
+            <button key={m} onClick={() => switchModule(m)} style={{ padding: '7px 16px', borderRadius: '8px', border: module === m ? 'none' : '1.5px solid #e2e8f0', fontWeight: '600', fontSize: '13px', cursor: 'pointer', background: module === m ? (m === 'xray' ? '#2563eb' : '#7c3aed') : '#fff', color: module === m ? '#fff' : '#64748b', transition: 'all .2s' }}>{lbl}</button>
+          ))}
+
+          <div style={{ width: '1px', height: '22px', background: '#e2e8f0', margin: '0 4px' }} />
+
+          {user && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 11px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '11px', fontWeight: '800' }}>{user.username?.[0]?.toUpperCase()}</div>
+              <span style={{ color: '#059669', fontWeight: '700', fontSize: '13px' }}>{user.username}</span>
+            </div>
+          )}
+
+          <button onClick={() => { reset(); setScreen('welcome'); setUser(null) }}
+            onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+            style={{ padding: '7px 14px', borderRadius: '8px', border: '1.5px solid #fecaca', fontWeight: '600', fontSize: '13px', cursor: 'pointer', background: '#fff', color: '#dc2626', transition: 'background .2s' }}>
+            Sign Out
           </button>
         </div>
-        {!heatmap && !gradcamLoading && (
-          <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '32px', textAlign: 'center', border: '2px dashed #e2e8f0' }}>
-            <div style={{ fontSize: '40px', marginBottom: '10px' }}>🔬</div>
-            <p style={{ color: '#64748b', fontWeight: '600' }}>Click "Generate Heatmap" to see AI attention visualization</p>
-            <p style={{ color: '#94a3b8', fontSize: '13px', marginTop: '4px' }}>Shows which areas the AI focused on for diagnosis</p>
-          </div>
-        )}
-        {gradcamLoading && (
-          <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '32px', textAlign: 'center' }}>
-            <div style={{ fontSize: '40px', marginBottom: '10px' }}>⏳</div>
-            <p style={{ color: '#64748b', fontWeight: '600' }}>Generating heatmap...</p>
-          </div>
-        )}
-        {heatmap && (
+      </nav>
+
+      {/* ── BANNER ── */}
+      <div style={G.banner}>
+        <div style={{ maxWidth: '1160px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '16px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: '#64748b', fontSize: '12px', fontWeight: '700', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Original Image</p>
-                <img src={preview} alt="original" style={{ width: '100%', borderRadius: '10px', objectFit: 'contain', maxHeight: '280px', background: '#000' }} />
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: '#64748b', fontSize: '12px', fontWeight: '700', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Attention Heatmap</p>
-                <img src={`data:image/jpeg;base64,${heatmap}`} alt="heatmap" style={{ width: '100%', borderRadius: '10px', objectFit: 'contain', maxHeight: '280px' }} />
-              </div>
-            </div>
-            <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', border: '1px solid #e2e8f0' }}>
-              <p style={{ color: '#475569', fontSize: '13px', lineHeight: 1.6 }}>
-                <strong>📖 How to read:</strong> 🔴 <strong>Red/Yellow</strong> areas show where the AI detected abnormality. 🔵 <strong>Blue</strong> areas are less relevant.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-
-    const PatientBadge = () => patient.name ? (
-      <div style={{
-        background: 'white', borderRadius: '12px', padding: '12px 20px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9', textAlign: 'right'
-      }}>
-        <p style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700' }}>PATIENT</p>
-        <p style={{ color: '#0f172a', fontWeight: '800', fontSize: '16px' }}>{patient.name}</p>
-        <p style={{ color: '#64748b', fontSize: '12px' }}>
-          {patient.id && `ID: ${patient.id} • `}{patient.age && `Age: ${patient.age} • `}{patient.gender}
-        </p>
-      </div>
-    ) : null
-
-    return (
-      <div style={{ minHeight: '100vh', background: '#f0f4f8' }}>
-        {/* Navbar */}
-        <nav style={{
-          background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 32px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ background: 'linear-gradient(135deg, #2563eb, #0ea5e9)', borderRadius: '10px', padding: '8px', fontSize: '20px' }}>🏥</div>
-            <div>
-              <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', lineHeight: 1 }}>MediAI Diagnostics</h1>
-              <p style={{ fontSize: '11px', color: '#94a3b8' }}>AI-Powered Clinical Decision Support</p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {[['xray', '🫁', 'Chest X-Ray'], ['brain', '🧠', 'Brain MRI']].map(([m, icon, label]) => (
-              <button key={m} onClick={() => switchModule(m)} style={{
-                padding: '8px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                fontWeight: '600', fontSize: '14px',
-                background: module === m ? (m === 'brain' ? '#7c3aed' : '#2563eb') : '#f8fafc',
-                color: module === m ? 'white' : '#64748b', transition: 'all 0.2s'
-              }}>{icon} {label}</button>
-            ))}
-            {user && (
-              <div style={{
-                background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px',
-                padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px'
-              }}>
-                <span>👤</span>
-                <span style={{ color: '#16a34a', fontWeight: '700', fontSize: '13px' }}>{user.username}</span>
-              </div>
-            )}
-            <button onClick={() => { reset(); setScreen('welcome'); setUser(null) }} style={{
-              padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #fecaca',
-              cursor: 'pointer', fontWeight: '600', fontSize: '14px', background: '#fef2f2', color: '#dc2626'
-            }}>🚪 Logout</button>
-          </div>
-        </nav>
-
-        {/* Page Header */}
-        <div style={{ background: module === 'brain' ? 'linear-gradient(135deg, #4c1d95, #6d28d9)' : 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '28px 32px', color: 'white' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '26px', fontWeight: '800', marginBottom: '4px' }}>
-              {module === 'xray' ? '🫁 Chest X-Ray + Diabetes Analysis' : '🧠 Brain MRI Tumor Detection'}
+            <p style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>{isXray ? 'Chest X-Ray + Diabetes' : 'Brain MRI'}</p>
+            <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#fff', letterSpacing: '-0.5px', marginBottom: '4px' }}>
+              {isXray ? 'Pneumonia Detection & Diabetes Risk Assessment' : 'Brain Tumor Detection & Classification'}
             </h2>
-            <p style={{ opacity: 0.8, fontSize: '14px' }}>
-              {module === 'xray' ? 'Upload chest X-ray and enter patient vitals for AI-powered pneumonia and diabetes risk assessment' : 'Upload brain MRI scan for AI-powered tumor classification and risk assessment'}
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
+              {isXray ? 'Powered by ResNet-50 with Grad-CAM explainability' : 'Powered by EfficientNet-B3 with Grad-CAM explainability'}
             </p>
-            <div style={{ display: 'flex', gap: '16px', marginTop: '20px', flexWrap: 'wrap' }}>
-              {(module === 'xray' ? [['X-Ray Accuracy', '98%'], ['Diabetes Accuracy', '78%'], ['Model', 'ResNet-50'], ['Explainability', 'Grad-CAM'], ['Reports', 'PDF Export']] : [['MRI Accuracy', '94.75%'], ['Tumor Types', '4 Classes'], ['Model', 'EfficientNet-B3'], ['Explainability', 'Grad-CAM'], ['Reports', 'PDF Export']]).map(([l, v]) => (
-                <div key={l} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '10px', padding: '10px 18px' }}>
-                  <p style={{ opacity: 0.7, fontSize: '11px', fontWeight: '600' }}>{l}</p>
-                  <p style={{ fontWeight: '800', fontSize: '16px' }}>{v}</p>
-                </div>
-              ))}
-            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {(isXray
+              ? [['98%', 'X-Ray Acc.'], ['78%', 'Diabetes Acc.'], ['ResNet-50', 'Model'], ['Grad-CAM', 'XAI'], ['PDF', 'Export']]
+              : [['94.75%', 'MRI Acc.'], ['4', 'Tumor Types'], ['EfficientNet-B3', 'Model'], ['Grad-CAM', 'XAI'], ['PDF', 'Export']]
+            ).map(([v, l]) => (
+              <div key={l} style={G.chip}>
+                <p style={{ color: '#fff', fontWeight: '800', fontSize: '15px', lineHeight: 1 }}>{v}</p>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{l}</p>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
-          {error && (
-            <div style={{
-              background: '#fef2f2', border: '1px solid #fecaca', padding: '14px 18px',
-              borderRadius: '10px', marginBottom: '24px', color: '#dc2626', fontSize: '14px',
-              fontWeight: '500', display: 'flex', alignItems: 'center', gap: '10px'
-            }}>⚠️ {error}</div>
-          )}
-          {savedMsg && (
-            <div style={{
-              background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '14px 18px',
-              borderRadius: '10px', marginBottom: '24px', color: '#16a34a', fontSize: '14px',
-              fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px'
-            }}>{savedMsg}</div>
-          )}
+      {/* ── BODY ── */}
+      <div style={G.body}>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            {/* Left Column */}
-            <div>
-              <div style={card}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '8px', fontSize: '18px' }}>👤</div>
-                  <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>Patient Information</h3>
-                    <p style={{ fontSize: '12px', color: '#94a3b8' }}>Enter patient details</p>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  <div style={{ gridColumn: '1/-1' }}>
-                    <label style={lbl}>Full Name</label>
-                    <input style={inp} placeholder="Enter patient full name" value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={lbl}>Patient ID</label>
-                    <input style={inp} placeholder="PT-001" value={patient.id} onChange={e => setPatient({ ...patient, id: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={lbl}>Age</label>
-                    <input style={inp} type="number" placeholder="Years" value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} />
-                  </div>
-                  <div style={{ gridColumn: '1/-1' }}>
-                    <label style={lbl}>Gender</label>
-                    <select style={inp} value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })}>
-                      <option>Male</option><option>Female</option><option>Other</option>
-                    </select>
-                  </div>
+        {/* Alerts */}
+        {error && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px' }}>
+            <span style={{ color: '#dc2626', fontSize: '16px', fontWeight: '700' }}>⚠</span>
+            <p style={{ color: '#dc2626', fontSize: '13px', flex: 1 }}>{error}</p>
+            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: '18px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+          </div>
+        )}
+        {savedMsg && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px' }}>
+            <span style={{ color: '#10b981' }}>✓</span>
+            <p style={{ color: '#059669', fontSize: '13px' }}>{savedMsg}</p>
+          </div>
+        )}
+
+        {/* Two column grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+
+          {/* ── LEFT ── */}
+          <div>
+            {/* Patient */}
+            <div style={G.card}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '14px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
+                <div>
+                  <p style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>Patient Information</p>
+                  <p style={{ fontSize: '11px', color: '#94a3b8' }}>Enter patient details</p>
                 </div>
               </div>
-
-              <div style={card}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ background: module === 'brain' ? '#f5f3ff' : '#eff6ff', borderRadius: '8px', padding: '8px', fontSize: '18px' }}>{module === 'xray' ? '📷' : '🧠'}</div>
-                  <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{module === 'xray' ? 'Chest X-Ray Image' : 'Brain MRI Scan'}</h3>
-                    <p style={{ fontSize: '12px', color: '#94a3b8' }}>Upload medical scan image</p>
-                  </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={G.lbl}>Full Name</label>
+                  <input style={G.inp} value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })}
+                    onFocus={e => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}20` }}
+                    onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }} />
                 </div>
-                <label style={{ display: 'block', border: '2px dashed #e2e8f0', borderRadius: '12px', padding: '28px', textAlign: 'center', cursor: 'pointer', background: '#f8fafc' }}>
-                  <input type="file" accept="image/*" onChange={handleImage} style={{ display: 'none' }} />
-                  {preview ? (
-                    <img src={preview} alt="preview" style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '10px', objectFit: 'contain' }} />
-                  ) : (
-                    <>
-                      <div style={{ fontSize: '40px', marginBottom: '10px' }}>🖼️</div>
-                      <p style={{ color: '#475569', fontSize: '14px', fontWeight: '600' }}>Click to upload image</p>
-                      <p style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>PNG, JPG, JPEG — Max 10MB</p>
-                    </>
-                  )}
-                </label>
-                {module === 'brain' && (
-                  <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px', padding: '10px 14px', marginTop: '12px' }}>
-                    <p style={{ color: '#7c3aed', fontSize: '12px', fontWeight: '600' }}>⚠️ Only Brain MRI scans accepted.</p>
-                  </div>
-                )}
+                <div>
+                  <label style={G.lbl}>Patient ID</label>
+                  <input style={G.inp} placeholder="PT-001" value={patient.id} onChange={e => setPatient({ ...patient, id: e.target.value })}
+                    onFocus={e => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}20` }}
+                    onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }} />
+                </div>
+                <div>
+                  <label style={G.lbl}>Age</label>
+                  <input style={G.inp} type="number" value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })}
+                    onFocus={e => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}20` }}
+                    onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }} />
+                </div>
+                <div>
+                  <label style={G.lbl}>Gender</label>
+                  <select style={G.inp} value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })}>
+                    <option>Male</option><option>Female</option><option>Other</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Right Column */}
-            <div>
-              {module === 'xray' && (
-                <div style={card}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ background: '#f0fdf4', borderRadius: '8px', padding: '8px', fontSize: '18px' }}>💉</div>
-                    <div>
-                      <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>Patient Vitals</h3>
-                      <p style={{ fontSize: '12px', color: '#94a3b8' }}>Enter lab values for diabetes risk</p>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                    {[['pregnancies', 'Pregnancies', '0', ''], ['glucose', 'Glucose (mg/dL)', '120', '*'], ['blood_pressure', 'Blood Pressure', '80', ''], ['skin_thickness', 'Skin Thickness', '20', ''], ['insulin', 'Insulin (μU/mL)', '80', ''], ['bmi', 'BMI (kg/m²)', '25.0', '*'], ['diabetes_pedigree', 'Diabetes Pedigree', '0.5', ''], ['age', 'Age (Years)', '30', '*']].map(([key, label, ph, req]) => (
-                      <div key={key}>
-                        <label style={lbl}>{label} <span style={{ color: '#ef4444' }}>{req}</span></label>
-                        <input type="number" style={inp} placeholder={ph} value={vitals[key]} onChange={e => setVitals({ ...vitals, [key]: e.target.value })} />
-                      </div>
-                    ))}
-                  </div>
-                  <p style={{ color: '#94a3b8', fontSize: '11px', marginTop: '12px' }}>* Required fields</p>
+            {/* Upload */}
+            <div style={G.card}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '14px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: isXray ? '#eff6ff' : '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{isXray ? '🫁' : '🧠'}</div>
+                <div>
+                  <p style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>{isXray ? 'Chest X-Ray Image' : 'Brain MRI Scan'}</p>
+                  <p style={{ fontSize: '11px', color: '#94a3b8' }}>Upload your medical scan</p>
                 </div>
-              )}
+              </div>
+              <label style={{ display: 'block', border: `2px dashed ${preview ? accent : '#e2e8f0'}`, borderRadius: '12px', padding: '22px', textAlign: 'center', cursor: 'pointer', background: preview ? `${accent}08` : '#f8fafc', transition: 'all .2s' }}>
+                <input type="file" accept="image/*" onChange={handleImage} style={{ display: 'none' }} />
+                {preview
+                  ? <img src={preview} alt="preview" style={{ maxWidth: '100%', maxHeight: '160px', borderRadius: '8px', objectFit: 'contain' }} />
+                  : <>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', margin: '0 auto 10px' }}>📁</div>
+                    <p style={{ color: '#475569', fontSize: '13px', fontWeight: '600' }}>Click to upload image</p>
+                    <p style={{ color: '#94a3b8', fontSize: '11px', marginTop: '3px' }}>PNG, JPG, JPEG · Max 10MB</p>
+                  </>
+                }
+              </label>
+              {!isXray && <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px', padding: '8px 12px', marginTop: '10px' }}><p style={{ color: '#7c3aed', fontSize: '11px', fontWeight: '600' }}>Only Brain MRI scans accepted</p></div>}
+            </div>
+          </div>
 
-              {module === 'brain' && (
-                <div style={card}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ background: '#f5f3ff', borderRadius: '8px', padding: '8px', fontSize: '18px' }}>ℹ️</div>
-                    <div>
-                      <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>Detectable Conditions</h3>
-                      <p style={{ fontSize: '12px', color: '#94a3b8' }}>4 tumor types supported</p>
-                    </div>
+          {/* ── RIGHT ── */}
+          <div>
+            {isXray ? (
+              <div style={G.card}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '14px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>💉</div>
+                  <div>
+                    <p style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>Patient Vitals</p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8' }}>Lab values for diabetes risk</p>
                   </div>
-                  {[['🔴', 'Glioma', 'Most common malignant brain tumor.', '#fef2f2', '#dc2626'], ['🟠', 'Meningioma', 'Usually benign. Arises from meninges.', '#fff7ed', '#ea580c'], ['🟣', 'Pituitary', 'Affects the pituitary gland.', '#faf5ff', '#7c3aed'], ['🟢', 'No Tumor', 'No abnormality detected.', '#f0fdf4', '#16a34a']].map(([icon, name, desc, bg, color]) => (
-                    <div key={name} style={{ display: 'flex', gap: '14px', padding: '14px', borderRadius: '10px', marginBottom: '10px', background: bg, border: `1px solid ${color}20` }}>
-                      <span style={{ fontSize: '22px' }}>{icon}</span>
-                      <div>
-                        <p style={{ color: '#0f172a', fontWeight: '700', fontSize: '14px' }}>{name}</p>
-                        <p style={{ color: '#64748b', fontSize: '12px', marginTop: '2px' }}>{desc}</p>
-                      </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '11px' }}>
+                  {[['pregnancies','Pregnancies',''],['glucose','Glucose (mg/dL)','*'],['blood_pressure','Blood Pressure',''],['skin_thickness','Skin Thickness',''],['insulin','Insulin (μU/mL)',''],['bmi','BMI (kg/m²)','*'],['diabetes_pedigree','Pedigree Fn.',''],['age','Age (Years)','*']].map(([key, label, req]) => (
+                    <div key={key}>
+                      <label style={G.lbl}>{label} {req && <span style={{ color: '#ef4444' }}>{req}</span>}</label>
+                      <input type="number" style={G.inp} value={vitals[key]} onChange={e => setVitals({ ...vitals, [key]: e.target.value })}
+                        onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.boxShadow = '0 0 0 3px #10b98118' }}
+                        onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }} />
                     </div>
                   ))}
                 </div>
-              )}
-
-              <button onClick={analyze} disabled={loading} style={{
-                width: '100%', padding: '16px', border: 'none', borderRadius: '12px',
-                fontSize: '16px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
-                background: loading ? '#e2e8f0' : module === 'brain' ? 'linear-gradient(135deg, #6d28d9, #7c3aed)' : 'linear-gradient(135deg, #1d4ed8, #2563eb)',
-                color: loading ? '#94a3b8' : 'white',
-                boxShadow: loading ? 'none' : '0 4px 14px rgba(37,99,235,0.35)', transition: 'all 0.3s'
-              }}>
-                {loading ? '⏳ Analyzing Patient Data...' : '🔍 Run AI Diagnosis'}
-              </button>
-            </div>
-          </div>
-
-          {/* X-Ray Results */}
-          {xrayResult && vitalsResult && (
-            <div style={{ marginTop: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div>
-                  <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>📊 Diagnosis Results</h2>
-                  <p style={{ color: '#64748b', fontSize: '14px' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '10px' }}>* Required fields</p>
+              </div>
+            ) : (
+              <div style={G.card}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '14px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🔬</div>
+                  <div>
+                    <p style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>Detectable Conditions</p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8' }}>4 tumor types supported</p>
+                  </div>
                 </div>
-                <PatientBadge />
+                {[
+                  ['Glioma', 'Most common malignant brain tumor', '#ef4444', '#fef2f2', '#fecaca'],
+                  ['Meningioma', 'Usually benign, arises from meninges', '#f59e0b', '#fefce8', '#fef08a'],
+                  ['Pituitary', 'Affects the pituitary gland', '#8b5cf6', '#f5f3ff', '#ddd6fe'],
+                  ['No Tumor', 'No abnormality detected', '#10b981', '#f0fdf4', '#bbf7d0'],
+                ].map(([name, desc, color, bg, border]) => (
+                  <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: bg, border: `1px solid ${border}`, borderRadius: '10px', marginBottom: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    <div>
+                      <p style={{ fontWeight: '700', fontSize: '13px', color: '#0f172a' }}>{name}</p>
+                      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '1px' }}>{desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div style={{ display: 'flex', gap: '20px' }}>
-                <ResultCard icon="🫁" title="Chest X-Ray Analysis" result={xrayResult} color="#2563eb" />
-                <ResultCard icon="🩸" title="Diabetes Risk Analysis" result={vitalsResult} color="#059669" />
-              </div>
-              <DownloadButton color="#059669" />
-              <Disclaimer />
-              <HeatmapSection heatmap={xrayHeatmap} color="#2563eb" borderColor="#bfdbfe" />
-            </div>
-          )}
+            )}
 
-          {/* Brain Results */}
-          {brainResult && (
-            <div style={{ marginTop: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div>
-                  <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>📊 Brain MRI Results</h2>
-                  <p style={{ color: '#64748b', fontSize: '14px' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                </div>
-                <PatientBadge />
-              </div>
-              <ResultCard icon="🧠" title="Brain Tumor Analysis" result={brainResult} color="#7c3aed" />
-              <DownloadButton color="#7c3aed" />
-              <Disclaimer />
-              <HeatmapSection heatmap={brainHeatmap} color="#7c3aed" borderColor="#ddd6fe" />
-            </div>
-          )}
-
-          <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
-            <p style={{ color: '#cbd5e1', fontSize: '13px' }}>MediAI Diagnostics — GLS University Capstone Project 2025-26 | Integrated MSc(IT) Programme</p>
+            {/* Analyze btn */}
+            <button onClick={analyze} disabled={loading}
+              onMouseEnter={e => !loading && (e.currentTarget.style.opacity = '0.88')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              style={{ width: '100%', padding: '14px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', background: loading ? '#f1f5f9' : isXray ? 'linear-gradient(135deg,#1e40af,#3b82f6)' : 'linear-gradient(135deg,#5b21b6,#8b5cf6)', color: loading ? '#94a3b8' : '#fff', boxShadow: loading ? 'none' : `0 4px 14px ${accent}35`, transition: 'all .2s' }}>
+              {loading ? 'Analyzing...' : 'Run AI Diagnosis'}
+            </button>
           </div>
         </div>
+
+        {/* ── XRAY RESULTS ── */}
+        {xrayResult && vitalsResult && (
+          <div style={{ marginTop: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.4px' }}>Diagnosis Results</h2>
+                <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+              {patient.name && (
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 16px', textAlign: 'right' }}>
+                  <p style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', letterSpacing: '1px' }}>PATIENT</p>
+                  <p style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>{patient.name}</p>
+                  <p style={{ fontSize: '11px', color: '#64748b' }}>{[patient.id, patient.age && `Age ${patient.age}`, patient.gender].filter(Boolean).join(' · ')}</p>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '18px', marginBottom: '16px' }}>
+              <ResultCard icon="🫁" title="Chest X-Ray Analysis" result={xrayResult} color="#2563eb" />
+              <ResultCard icon="🩸" title="Diabetes Risk Analysis" result={vitalsResult} color="#10b981" />
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, background: '#fefce8', border: '1px solid #fef08a', borderRadius: '10px', padding: '10px 14px' }}>
+                <p style={{ color: '#854d0e', fontSize: '12px' }}><b>Disclaimer:</b> AI-assisted decision support only. Always consult a qualified physician.</p>
+              </div>
+              <button onClick={downloadReport} disabled={reportLoading}
+                onMouseEnter={e => !reportLoading && (e.currentTarget.style.opacity = '0.85')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                style={{ padding: '10px 20px', border: 'none', borderRadius: '8px', background: reportLoading ? '#f1f5f9' : '#10b981', color: reportLoading ? '#94a3b8' : '#fff', fontWeight: '700', fontSize: '13px', cursor: reportLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', boxShadow: reportLoading ? 'none' : '0 2px 8px #10b98130', transition: 'opacity .2s' }}>
+                {reportLoading ? 'Generating...' : 'Download PDF Report'}
+              </button>
+            </div>
+            <HeatmapSection heatmap={xrayHeatmap} color="#2563eb" />
+          </div>
+        )}
+
+        {/* ── BRAIN RESULTS ── */}
+        {brainResult && (
+          <div style={{ marginTop: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.4px' }}>Brain MRI Results</h2>
+                <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+              {patient.name && (
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 16px', textAlign: 'right' }}>
+                  <p style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', letterSpacing: '1px' }}>PATIENT</p>
+                  <p style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>{patient.name}</p>
+                  <p style={{ fontSize: '11px', color: '#64748b' }}>{[patient.id, patient.age && `Age ${patient.age}`, patient.gender].filter(Boolean).join(' · ')}</p>
+                </div>
+              )}
+            </div>
+            <ResultCard icon="🧠" title="Brain Tumor Analysis" result={brainResult} color="#7c3aed" />
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, background: '#fefce8', border: '1px solid #fef08a', borderRadius: '10px', padding: '10px 14px' }}>
+                <p style={{ color: '#854d0e', fontSize: '12px' }}><b>Disclaimer:</b> AI-assisted decision support only. Always consult a qualified physician.</p>
+              </div>
+              <button onClick={downloadReport} disabled={reportLoading}
+                onMouseEnter={e => !reportLoading && (e.currentTarget.style.opacity = '0.85')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                style={{ padding: '10px 20px', border: 'none', borderRadius: '8px', background: reportLoading ? '#f1f5f9' : '#7c3aed', color: reportLoading ? '#94a3b8' : '#fff', fontWeight: '700', fontSize: '13px', cursor: reportLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', boxShadow: reportLoading ? 'none' : '0 2px 8px #7c3aed30', transition: 'opacity .2s' }}>
+                {reportLoading ? 'Generating...' : 'Download PDF Report'}
+              </button>
+            </div>
+            <HeatmapSection heatmap={brainHeatmap} color="#7c3aed" />
+          </div>
+        )}
+
+        <div style={{ marginTop: '48px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
+          <p style={{ color: '#cbd5e1', fontSize: '11px', letterSpacing: '0.5px' }}>MediAI Diagnostics · GLS University Capstone 2025–26 · Integrated MSc(IT)</p>
+        </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
