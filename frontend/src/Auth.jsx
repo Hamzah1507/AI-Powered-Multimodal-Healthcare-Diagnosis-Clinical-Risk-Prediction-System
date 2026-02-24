@@ -8,11 +8,12 @@ export default function Auth({ mode, onSuccess, onBack }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isLogin, setIsLogin] = useState(mode === 'login')
+  const [showPassword, setShowPassword] = useState(false)
 
   const handle = async () => {
     setError(null)
-    if (!form.email || !form.password) { setError('Please fill all required fields!'); return }
-    if (!isLogin && !form.username) { setError('Please enter your name!'); return }
+    if (!form.email || !form.password) { setError('Please fill all required fields'); return }
+    if (!isLogin && !form.username) { setError('Please enter your full name'); return }
     setLoading(true)
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register'
@@ -22,128 +23,184 @@ export default function Auth({ mode, onSuccess, onBack }) {
       const res = await axios.post(`${API}${endpoint}`, payload)
       if (!isLogin) {
         setIsLogin(true)
-        setError(null)
         setForm({ ...form, password: '' })
-        alert('✅ Account created! Please login now.')
+        setError(null)
+        alert('Account created successfully! Please sign in.')
       } else {
         onSuccess({ username: res.data.username, email: res.data.email })
       }
     } catch (e) {
-      setError(e.response?.data?.detail || 'Something went wrong!')
+      setError(e.response?.data?.detail || 'Something went wrong. Please try again.')
     }
     setLoading(false)
   }
 
   const inp = {
-    width: '100%', padding: '12px 16px', borderRadius: '10px',
-    border: '1.5px solid rgba(255,255,255,0.15)',
-    background: 'rgba(255,255,255,0.07)',
-    color: 'white', fontSize: '14px', boxSizing: 'border-box',
-    outline: 'none', marginTop: '6px'
+    width: '100%', padding: '14px 16px',
+    border: '1.5px solid #e2e8f0', borderRadius: '6px',
+    background: '#fafafa', color: '#0f172a', fontSize: '14px',
+    boxSizing: 'border-box', outline: 'none',
+    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontWeight: '400',
+    transition: 'border-color 0.2s'
   }
+
   const lbl = {
-    fontSize: '12px', fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
-    textTransform: 'uppercase', letterSpacing: '0.5px'
+    fontSize: '11px', fontWeight: '700', color: '#64748b',
+    textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '6px'
   }
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+      height: '100vh', width: '100vw', overflow: 'hidden',
+      background: '#ffffff', display: 'flex',
+      fontFamily: "'Helvetica Neue', Arial, sans-serif"
     }}>
+      {/* Left Panel */}
       <div style={{
-        background: 'rgba(255,255,255,0.05)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '24px', padding: '48px',
-        width: '100%', maxWidth: '440px',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+        width: '40%', height: '100%',
+        background: 'linear-gradient(145deg, #eef2ff 0%, #e0e9ff 60%, #dbeafe 100%)',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', padding: '80px',
+        position: 'relative', overflow: 'hidden'
       }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'radial-gradient(circle, #2563eb12 1px, transparent 1px)',
+          backgroundSize: '28px 28px'
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-100px', right: '-80px',
+          width: '360px', height: '360px', borderRadius: '50%',
+          background: 'radial-gradient(circle, #2563eb14 0%, transparent 70%)'
+        }} />
 
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #2563eb, #0ea5e9)',
-            borderRadius: '16px', padding: '12px',
-            fontSize: '28px', display: 'inline-block', marginBottom: '16px'
-          }}>🏥</div>
-          <h2 style={{ color: 'white', fontSize: '24px', fontWeight: '800', marginBottom: '6px' }}>
-            {isLogin ? 'Welcome Back!' : 'Create Account'}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ marginBottom: '48px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '5px', color: '#2563eb', textTransform: 'uppercase' }}>MediAI</span>
+            <div style={{ width: '32px', height: '2px', background: '#2563eb', marginTop: '8px' }} />
+          </div>
+
+          <h2 style={{ fontSize: '40px', fontWeight: '300', color: '#0f172a', letterSpacing: '-1.5px', marginBottom: '6px' }}>
+            {isLogin ? 'Good to' : 'Join'}
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
-            {isLogin ? 'Login to MediAI Diagnostics' : 'Join MediAI Diagnostics'}
+          <h2 style={{ fontSize: '40px', fontWeight: '800', color: '#2563eb', letterSpacing: '-1.5px', marginBottom: '24px' }}>
+            {isLogin ? 'see you.' : 'MediAI.'}
+          </h2>
+
+          <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.8, fontWeight: '300', maxWidth: '280px' }}>
+            {isLogin
+              ? 'Access AI-powered diagnostics, patient history, and clinical reports.'
+              : 'Create your account to start using AI-powered medical imaging analysis.'}
           </p>
+
+          <button onClick={onBack} style={{
+            marginTop: '48px', background: 'none', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+            color: '#94a3b8', fontSize: '13px', padding: 0, transition: 'color 0.2s'
+          }}
+            onMouseEnter={e => e.currentTarget.style.color = '#2563eb'}
+            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+          >
+            ← Back to home
+          </button>
         </div>
+      </div>
 
-        {/* Error */}
-        {error && (
-          <div style={{
-            background: 'rgba(220,38,38,0.2)', border: '1px solid rgba(220,38,38,0.4)',
-            borderRadius: '10px', padding: '12px 16px', marginBottom: '20px',
-            color: '#fca5a5', fontSize: '14px'
-          }}>⚠️ {error}</div>
-        )}
+      {/* Right Panel */}
+      <div style={{
+        width: '60%', height: '100%',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        padding: '80px', background: '#ffffff', overflowY: 'auto'
+      }}>
+        <div style={{ width: '100%', maxWidth: '400px' }}>
 
-        {/* Form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {!isLogin && (
-            <div>
-              <label style={lbl}>Full Name</label>
-              <input style={inp} placeholder="Dr. John Smith"
-                value={form.username}
-                onChange={e => setForm({ ...form, username: e.target.value })} />
+          <div style={{ marginBottom: '40px' }}>
+            <h3 style={{ fontSize: '26px', fontWeight: '300', color: '#0f172a', letterSpacing: '-0.5px', marginBottom: '8px' }}>
+              {isLogin ? 'Sign in to your account' : 'Create your account'}
+            </h3>
+            <p style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '300' }}>
+              {isLogin ? 'Enter your credentials to continue' : 'Fill in the details below to get started'}
+            </p>
+          </div>
+
+          {error && (
+            <div style={{
+              background: '#fef2f2', border: '1px solid #fecaca',
+              borderRadius: '6px', padding: '12px 16px', marginBottom: '24px',
+              color: '#dc2626', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'
+            }}>
+              ⚠ {error}
             </div>
           )}
-          <div>
-            <label style={lbl}>Email Address</label>
-            <input style={inp} type="email" placeholder="doctor@hospital.com"
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
+            {!isLogin && (
+              <div>
+                <label style={lbl}>Full Name</label>
+                <input style={inp} value={form.username}
+                  onFocus={e => e.target.style.borderColor = '#2563eb'}
+                  onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  onChange={e => setForm({ ...form, username: e.target.value })} />
+              </div>
+            )}
+            <div>
+              <label style={lbl}>Email Address</label>
+              <input style={inp} type="email" value={form.email}
+                onFocus={e => e.target.style.borderColor = '#2563eb'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                onChange={e => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div>
+              <label style={lbl}>Password</label>
+              <div style={{ position: 'relative' }}>
+                <input style={{ ...inp, paddingRight: '48px' }}
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onFocus={e => e.target.style.borderColor = '#2563eb'}
+                  onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  onKeyDown={e => e.key === 'Enter' && handle()} />
+                <button onClick={() => setShowPassword(!showPassword)} style={{
+                  position: 'absolute', right: '14px', top: '50%',
+                  transform: 'translateY(-50%)', background: 'none',
+                  border: 'none', cursor: 'pointer', color: '#94a3b8',
+                  fontSize: '16px', padding: 0, display: 'flex', alignItems: 'center'
+                }}>
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label style={lbl}>Password</label>
-            <input style={inp} type="password" placeholder="••••••••"
-              value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
-              onKeyDown={e => e.key === 'Enter' && handle()} />
-          </div>
+
+          <button onClick={handle} disabled={loading}
+            onMouseEnter={e => !loading && (e.currentTarget.style.background = '#2563eb')}
+            onMouseLeave={e => !loading && (e.currentTarget.style.background = '#0f172a')}
+            style={{
+              width: '100%', padding: '16px 24px',
+              background: loading ? '#94a3b8' : '#0f172a',
+              border: 'none', borderRadius: '6px',
+              color: 'white', fontSize: '14px', fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              transition: 'background 0.25s', letterSpacing: '0.3px'
+            }}>
+            <span>{loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}</span>
+            <span style={{ fontSize: '18px' }}>{loading ? '⏳' : '→'}</span>
+          </button>
+
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '13px', color: '#94a3b8' }}>
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <span onClick={() => { setIsLogin(!isLogin); setError(null) }}
+              style={{ color: '#2563eb', fontWeight: '700', cursor: 'pointer' }}>
+              {isLogin ? 'Create one' : 'Sign in'}
+            </span>
+          </p>
+
+          <p style={{ fontSize: '11px', color: '#e2e8f0', textAlign: 'center', marginTop: '40px', letterSpacing: '1px' }}>
+            GLS UNIVERSITY · CAPSTONE 2025–26
+          </p>
         </div>
-
-        {/* Submit Button */}
-        <button onClick={handle} disabled={loading} style={{
-          width: '100%', padding: '14px', marginTop: '24px',
-          background: loading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #2563eb, #0ea5e9)',
-          border: 'none', borderRadius: '12px',
-          color: loading ? 'rgba(255,255,255,0.4)' : 'white',
-          fontSize: '16px', fontWeight: '700',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          boxShadow: loading ? 'none' : '0 4px 20px rgba(37,99,235,0.4)'
-        }}>
-          {loading ? '⏳ Please wait...' : isLogin ? '🔐 Login' : '✨ Create Account'}
-        </button>
-
-        {/* Switch Mode */}
-        <p style={{ textAlign: 'center', marginTop: '20px',
-          color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <span onClick={() => { setIsLogin(!isLogin); setError(null) }} style={{
-            color: '#60a5fa', fontWeight: '700', cursor: 'pointer'
-          }}>
-            {isLogin ? 'Register' : 'Login'}
-          </span>
-        </p>
-
-        {/* Back Button */}
-        <p style={{ textAlign: 'center', marginTop: '12px' }}>
-          <span onClick={onBack} style={{
-            color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer'
-          }}>
-            ← Back to Welcome
-          </span>
-        </p>
       </div>
     </div>
   )
