@@ -127,7 +127,7 @@ export default function Auth({ mode, onSuccess, onBack }) {
       {/* Main content */}
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '48px 24px', position: 'relative', zIndex: 1
+        padding: '18px 24px', position: 'relative', zIndex: 1
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
 
