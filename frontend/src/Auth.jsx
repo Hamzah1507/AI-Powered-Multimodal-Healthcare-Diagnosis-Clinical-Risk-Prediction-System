@@ -132,7 +132,7 @@ export default function Auth({ mode, onSuccess, onBack }) {
         <div style={{ width: '100%', maxWidth: '420px' }}>
 
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '40px', ...fadeIn(0.1) }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px', ...fadeIn(0.1) }}>
             <div style={{
               width: '52px', height: '52px', borderRadius: '14px',
               background: 'linear-gradient(135deg, #2563eb, #0ea5e9)',
