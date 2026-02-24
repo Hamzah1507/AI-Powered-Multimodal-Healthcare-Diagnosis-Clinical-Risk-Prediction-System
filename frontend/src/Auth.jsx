@@ -127,7 +127,7 @@ export default function Auth({ mode, onSuccess, onBack }) {
       {/* Main content */}
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '18px 24px', position: 'relative', zIndex: 1
+        padding: '16px 24px', position: 'relative', zIndex: 1
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
 
@@ -167,7 +167,7 @@ export default function Auth({ mode, onSuccess, onBack }) {
               }}>⚠ {error}</div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
               {!isLogin && (
                 <div>
                   <label style={lbl}>Full Name</label>
