@@ -1,33 +1,33 @@
 *,
 *::before,
 *::after {
-margin: 0;
-padding: 0;
-box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 html,
 body,
 #root {
-height: 100%;
-width: 100%;
-font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-color: #1e293b;
-background: #f4f7fb;
+  height: 100%;
+  width: 100%;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #1e293b;
+  background: #f4f7fb;
 }
 
 input,
 select,
 textarea,
 button {
-font-family: inherit;
+  font-family: inherit;
 }
 
 ::-webkit-scrollbar {
-width: 6px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-background: #cbd5e1;
-border-radius: 6px;
+  background: #cbd5e1;
+  border-radius: 6px;
 }
