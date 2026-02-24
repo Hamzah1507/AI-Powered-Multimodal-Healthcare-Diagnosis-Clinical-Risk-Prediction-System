@@ -154,7 +154,7 @@ export default function Auth({ mode, onSuccess, onBack }) {
           <div style={{
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '16px', padding: '32px',
+            borderRadius: '16px', padding: '24px',
             ...fadeIn(0.2)
           }}>
 
