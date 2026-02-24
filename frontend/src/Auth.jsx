@@ -167,7 +167,7 @@ export default function Auth({ mode, onSuccess, onBack }) {
               }}>⚠ {error}</div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
               {!isLogin && (
                 <div>
                   <label style={lbl}>Full Name</label>
