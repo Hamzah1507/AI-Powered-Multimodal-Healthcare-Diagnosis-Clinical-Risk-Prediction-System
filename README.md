@@ -1,96 +1,32 @@
-<div align="center">
-
 # 🏥 MediAI Diagnostics
-### AI-Powered Multimodal Healthcare Diagnosis & Clinical Risk Prediction System
 
-[![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python)](https://python.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0-EE4C2C?style=for-the-badge&logo=pytorch)](https://pytorch.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
-[![MongoDB](https://img.shields.io/badge/MongoDB-6.0-47A248?style=for-the-badge&logo=mongodb)](https://mongodb.com)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-
-<br/>
-
-![MediAI Banner](https://img.shields.io/badge/X--Ray%20Accuracy-98%25-1E3A8A?style=flat-square) 
-![Brain MRI](https://img.shields.io/badge/Brain%20MRI%20Accuracy-94.75%25-7C3AED?style=flat-square)
-![Diabetes](https://img.shields.io/badge/Diabetes%20Accuracy-78.57%25-059669?style=flat-square)
-![Explainability](https://img.shields.io/badge/Explainability-Grad--CAM-F59E0B?style=flat-square)
-
-</div>
+An AI-powered multimodal clinical diagnosis web application for detecting pneumonia from chest X-rays, classifying brain tumors from MRI scans, and predicting diabetes risk from patient vitals.
+Built with **React.js + FastAPI + PyTorch** with Grad-CAM explainability, PDF report generation, and MongoDB storage.
 
 ---
 
-## 📋 Table of Contents
+## 🤖 AI Models
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [AI Models](#-ai-models--accuracy)
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Installation](#-installation--setup)
-- [Usage](#-usage)
-- [Datasets](#-datasets)
-- [Screenshots](#-screenshots)
+- **Chest X-Ray** — ResNet-50 (Transfer Learning) → **98% accuracy** — Detects Normal vs Pneumonia
+- **Brain MRI** — EfficientNet-B3 (Transfer Learning) → **94.75% accuracy** — Classifies Glioma, Meningioma, Pituitary, No Tumor
+- **Diabetes Risk** — Multi-Layer Perceptron (MLP) → **78.57% accuracy** — Predicts diabetic risk from 8 patient vitals
 
 ---
 
-## 🔬 Overview
+## ✨ Features
 
-**MediAI Diagnostics** is a full-stack AI-powered clinical decision support system that assists medical professionals in diagnosing three critical conditions using deep learning models:
-
-| Module | Task | Model | Accuracy |
-|--------|------|-------|----------|
-| 🫁 Chest X-Ray | Pneumonia Detection | ResNet-50 | **98%** |
-| 🧠 Brain MRI | Tumor Classification (4 types) | EfficientNet-B3 | **94.75%** |
-| 🩸 Patient Vitals | Diabetes Risk Prediction | MLP | **78.57%** |
-
-The system goes beyond basic prediction by providing:
-- 🔥 **Grad-CAM heatmaps** — highlights the exact disease region on the medical image
-- 📄 **PDF diagnostic reports** — professional medical reports with patient info and heatmap
-- 🗄️ **MongoDB storage** — all predictions and patient data stored securely
-- 🔐 **Authentication** — user registration, login, and session management
-
----
-
-## ✨ Key Features
-
-- ✅ **Multimodal AI** — combines image analysis (X-Ray, MRI) and tabular data (vitals) in one platform
-- ✅ **Explainable AI (XAI)** — Grad-CAM visualizes exactly where the AI detected abnormality
-- ✅ **Focused Heatmaps** — red overlay only on high-risk regions, not the whole image
-- ✅ **Disease Labels** — AI diagnosis name and confidence % overlaid on heatmap image
-- ✅ **PDF Report Generation** — 2-page professional clinical report using ReportLab
-- ✅ **Patient Information Capture** — name, ID, age, gender stored with each diagnosis
-- ✅ **Brain MRI Validation** — automatically rejects non-MRI images with error messages
-- ✅ **Professional Medical UI** — clean white dashboard resembling real hospital software
-- ✅ **User Authentication** — MongoDB-backed register/login/logout system
-- ✅ **Responsive Design** — works on desktop and laptop screens
-
----
-
-## 🤖 AI Models & Accuracy
-
-### 1. 🫁 Chest X-Ray — Pneumonia Detection
-- **Architecture:** ResNet-50 (Transfer Learning, ImageNet pretrained)
-- **Dataset:** Kaggle Chest X-Ray Images (Pneumonia) — 5,863 images
-- **Classes:** Normal, Pneumonia
-- **Test Accuracy:** 98%
-- **Input:** 224×224 RGB image
-
-### 2. 🧠 Brain MRI — Tumor Classification
-- **Architecture:** EfficientNet-B3 (Transfer Learning, trained on Google Colab T4 GPU)
-- **Dataset:** Kaggle Brain Tumor MRI Dataset — 7,023 images
-- **Classes:** Glioma, Meningioma, No Tumor, Pituitary
-- **Test Accuracy:** 94.75%
-- **Input:** 224×224 RGB image
-- **Validation:** Automatically rejects chest X-rays submitted to this module
-
-### 3. 🩸 Diabetes Risk — Patient Vitals
-- **Architecture:** Multi-Layer Perceptron (MLP)
-- **Dataset:** Pima Indians Diabetes Dataset — 768 records
-- **Classes:** Diabetic, Non-Diabetic
-- **Test Accuracy:** 78.57%
-- **Input:** 8 numerical features (glucose, BMI, age, etc.)
+- 🫁 **Chest X-Ray Analysis** — Upload X-ray image for AI-powered pneumonia detection
+- 🧠 **Brain MRI Analysis** — Upload MRI scan for tumor type classification (4 classes)
+- 🩸 **Diabetes Risk Assessment** — Enter patient vitals for diabetes prediction
+- 🔥 **Grad-CAM Heatmaps** — Visualizes exact disease region with focused red overlay on the scan
+- 🏷️ **Disease Labels** — AI diagnosis name and confidence % drawn directly on heatmap
+- 📄 **PDF Report Generation** — 2-page professional clinical report with patient info and heatmap
+- 🔐 **User Authentication** — Register, login, logout with MongoDB-backed sessions
+- 👤 **Patient Information Capture** — Name, ID, age, gender stored with every diagnosis
+- 🗄️ **MongoDB Storage** — All predictions and patient records stored securely
+- 🚫 **Image Validation** — Automatically rejects wrong image types (e.g. X-ray in Brain MRI module)
+- 📊 **Probability Breakdown** — Shows confidence % for all classes with progress bars
+- 🎨 **Professional Medical UI** — Clean white dashboard built for clinical use
 
 ---
 
@@ -100,13 +36,13 @@ The system goes beyond basic prediction by providing:
 |-------|-------------|
 | **Frontend** | React.js 18, Axios, Vite |
 | **Backend** | Python 3.10, FastAPI, Uvicorn |
-| **AI / ML** | PyTorch 2.0, TorchVision, EfficientNet-B3, ResNet-50 |
-| **Explainability** | Grad-CAM (custom implementation with OpenCV) |
+| **AI / ML** | PyTorch 2.0, TorchVision, ResNet-50, EfficientNet-B3 |
+| **Explainability** | Grad-CAM (custom implementation with OpenCV + PyTorch hooks) |
 | **PDF Generation** | ReportLab |
 | **Database** | MongoDB (pymongo) |
 | **Image Processing** | OpenCV, Pillow |
 | **Data Processing** | NumPy, scikit-learn, joblib |
-| **Training** | Google Colab (T4 GPU) |
+| **Model Training** | Google Colab (T4 GPU) |
 
 ---
 
@@ -116,7 +52,7 @@ The system goes beyond basic prediction by providing:
 capstone-healthcare-ai/
 │
 ├── backend/
-│   ├── main.py              # FastAPI app + all endpoints
+│   ├── main.py              # FastAPI app + all API endpoints
 │   ├── predict.py           # AI model prediction functions
 │   ├── gradcam.py           # Grad-CAM heatmap generation
 │   ├── report.py            # PDF report generation (ReportLab)
@@ -127,14 +63,14 @@ capstone-healthcare-ai/
 │   ├── src/
 │   │   ├── App.jsx          # Main React component (complete UI)
 │   │   ├── App.css          # Styles
-│   │   └── index.css        # Global reset styles
+│   │   └── index.css        # Global styles
 │   ├── index.html
 │   └── package.json
 │
 ├── models/
-│   ├── image_model.pth          # ResNet-50 (Chest X-Ray, 92MB)
-│   ├── brain_tumor_model.pth    # EfficientNet-B3 (Brain MRI, 42MB)
-│   ├── vitals_model.pth         # MLP (Diabetes, 49KB)
+│   ├── image_model.pth          # ResNet-50 weights (Chest X-Ray)
+│   ├── brain_tumor_model.pth    # EfficientNet-B3 weights (Brain MRI)
+│   ├── vitals_model.pth         # MLP weights (Diabetes)
 │   └── vitals_scaler.pkl        # StandardScaler for vitals
 │
 ├── notebooks/
@@ -154,8 +90,7 @@ capstone-healthcare-ai/
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+
-- MongoDB (running locally on port 27017)
-- Git
+- MongoDB running on localhost:27017
 
 ### 1. Clone the Repository
 ```bash
@@ -165,12 +100,10 @@ cd AI-Powered-Multimodal-Healthcare-Diagnosis-Clinical-Risk-Prediction-System
 
 ### 2. Backend Setup
 ```bash
-# Create and activate virtual environment
 python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Mac/Linux
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # Mac/Linux
 
-# Install dependencies
 pip install fastapi uvicorn torch torchvision
 pip install opencv-python pillow numpy scikit-learn
 pip install pymongo reportlab grad-cam
@@ -182,50 +115,45 @@ cd frontend
 npm install
 ```
 
-### 4. Add AI Models
-Place the following model files in the `models/` directory:
-- `image_model.pth` — ResNet-50 chest X-ray model
-- `brain_tumor_model.pth` — EfficientNet-B3 brain MRI model
-- `vitals_model.pth` — MLP diabetes model
-- `vitals_scaler.pkl` — StandardScaler for vitals normalization
+### 4. Place Model Files
+Add the following into the `models/` folder:
+- `image_model.pth`
+- `brain_tumor_model.pth`
+- `vitals_model.pth`
+- `vitals_scaler.pkl`
 
-### 5. Start MongoDB
+---
+
+## 🚀 Running the App
+
+### Terminal 1 — Backend
 ```bash
-# Make sure MongoDB is running on localhost:27017
-mongod
+cd backend
+uvicorn main:app --reload
+# Running at: http://127.0.0.1:8000
+```
+
+### Terminal 2 — Frontend
+```bash
+cd frontend
+npm run dev
+# Running at: http://localhost:5173
 ```
 
 ---
 
-## 🚀 Usage
-
-### Start Backend (Terminal 1)
-```bash
-cd backend
-uvicorn main:app --reload
-# API running at: http://127.0.0.1:8000
-# Docs at: http://127.0.0.1:8000/docs
-```
-
-### Start Frontend (Terminal 2)
-```bash
-cd frontend
-npm run dev
-# App running at: http://localhost:5173
-```
-
-### API Endpoints
+## 🔗 API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/predict-xray` | Chest X-Ray pneumonia detection |
-| `POST` | `/predict-brain` | Brain MRI tumor classification |
-| `POST` | `/predict-vitals` | Diabetes risk from patient vitals |
-| `POST` | `/gradcam-xray` | Generate Grad-CAM heatmap for X-Ray |
-| `POST` | `/gradcam-brain` | Generate Grad-CAM heatmap for Brain MRI |
-| `POST` | `/generate-report` | Generate PDF diagnostic report |
 | `POST` | `/register` | Register new user |
 | `POST` | `/login` | User login |
+| `POST` | `/predict-xray` | Pneumonia detection from X-Ray |
+| `POST` | `/predict-brain` | Tumor classification from Brain MRI |
+| `POST` | `/predict-vitals` | Diabetes risk from patient vitals |
+| `POST` | `/gradcam-xray` | Grad-CAM heatmap for X-Ray |
+| `POST` | `/gradcam-brain` | Grad-CAM heatmap for Brain MRI |
+| `POST` | `/generate-report` | Generate PDF diagnostic report |
 
 ---
 
@@ -239,57 +167,12 @@ npm run dev
 
 ---
 
-## 📸 Screenshots
+## ⚠️ Disclaimer
 
-### Landing Page & Authentication
-> Clean dark landing page with Sign In / Create Account
-
-### Chest X-Ray + Diabetes Dashboard
-> Professional medical UI with patient info, X-ray upload, vitals input
-
-### Brain MRI Tumor Detection
-> Upload MRI scan, AI classifies tumor type with 94.75% accuracy
-
-### Grad-CAM Heatmap
-> Red overlay highlights exact tumor/pneumonia location on the scan
-
-### PDF Diagnostic Report
-> 2-page professional report with patient info, diagnosis, probabilities, and heatmap
-
----
-
-## 🎯 Project Highlights
-
-```
-✅ 3 Deep Learning Models trained and deployed
-✅ Explainable AI (Grad-CAM) — rare in student projects
-✅ Focused heatmaps — red overlay only on disease region
-✅ Professional PDF reports with embedded heatmap images
-✅ Full authentication system with MongoDB
-✅ React.js frontend with professional medical-grade UI
-✅ FastAPI backend with 7 working endpoints
-✅ Input validation — rejects wrong image types
-✅ Patient data storage and session management
-```
-
----
-
-## ⚠️ Medical Disclaimer
-
-> This system is developed for **research and educational purposes only**. It is **NOT intended for actual clinical use**. Always consult a qualified medical professional for medical diagnosis and treatment decisions.
+This project is built for **research and educational purposes only**. It is **not intended for real clinical use**. Always consult a qualified medical professional for diagnosis and treatment.
 
 ---
 
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-
-**MediAI Diagnostics** — AI-Powered Healthcare Diagnosis System
-
-⭐ Star this repo if you found it useful!
-
-</div>
